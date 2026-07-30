@@ -1,13 +1,23 @@
 package com.sportsems.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Handles all outgoing email notifications.
+ * Handles all outgoing email notifications via the Resend HTTP API
+ * (https://resend.com). Render's free tier blocks outbound SMTP ports
+ * (25/465/587), so we send over HTTPS instead — this is not blocked.
+ *
  * Set app.email.enabled=false in application.properties to disable.
  * NOTE: @Async is on each public method (not on private sendEmail)
  *       to avoid Spring self-invocation proxy bypass issue.
@@ -15,33 +25,59 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private static final String RESEND_ENDPOINT = "https://api.resend.com/emails";
+
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.email.enabled:false}")
     private boolean emailEnabled;
 
-    @Value("${app.email.from:noreply@sportsems.com}")
+    // Sandbox default until you verify your own domain on Resend.
+    // Once verified, set app.email.from to e.g. noreply@yourdomain.com
+    @Value("${app.email.from:onboarding@resend.dev}")
     private String fromEmail;
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${resend.api-key:}")
+    private String resendApiKey;
 
     private void send(String to, String subject, String body) {
         if (!emailEnabled) {
             System.out.println("[EMAIL DISABLED] To: " + to + " | Subject: " + subject);
             return;
         }
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            System.err.println("[EMAIL ERROR] RESEND_API_KEY is not set — skipping send to " + to);
+            return;
+        }
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
-            mailSender.send(message);
-            System.out.println("[EMAIL SENT] To: " + to);
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("from", fromEmail);
+            payload.put("to", new String[] { to });
+            payload.put("subject", subject);
+            payload.put("text", body);
+
+            String json = objectMapper.writeValueAsString(payload);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RESEND_ENDPOINT))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                System.out.println("[EMAIL SENT] To: " + to);
+            } else {
+                // Never crash the main flow due to email failure — just log it.
+                System.err.println("[EMAIL ERROR] Resend returned " + response.statusCode()
+                        + " for " + to + ": " + response.body());
+            }
         } catch (Exception e) {
-            // Never crash the main flow due to email failure
             System.err.println("[EMAIL ERROR] Failed to send to " + to + ": " + e.getMessage());
         }
     }
