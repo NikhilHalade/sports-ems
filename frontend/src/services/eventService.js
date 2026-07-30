@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getToken } from "../utils/auth";
+import { API_BASE_URL } from "../config/api";
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = `${API_BASE_URL}/api`;
 
 function getHeaders() {
   const token = getToken();
@@ -13,7 +14,7 @@ function normalizeError(error) {
     return { status: error.response.status,
              message: error.response.data.message || error.response.data.error || "Something went wrong." };
   if (error.request)
-    return { status: null, message: "Unable to reach the server. Please check the backend is running on http://localhost:8080." };
+    return { status: null, message: "Unable to reach the server. Please try again in a moment." };
   return { status: null, message: error.message || "An unexpected error occurred." };
 }
 

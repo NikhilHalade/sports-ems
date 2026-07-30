@@ -2,6 +2,7 @@ import { getToken } from "../utils/auth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import eventService from "../services/eventService";
+import { API_BASE_URL } from "../config/api";
 
 function formatDate(isoDate) {
   if (!isoDate) return "—";
@@ -146,7 +147,7 @@ function Events() {
     async function load() {
       try {
         // Public fetch — no auth header needed for viewing
-        const res = await fetch("http://localhost:8080/api/events", {
+        const res = await fetch(`${API_BASE_URL}/api/events`, {
           headers: isLoggedIn
             ? { Authorization: `Bearer ${getToken()}` }
             : {},
@@ -170,7 +171,7 @@ function Events() {
     }
     try {
       const res = await fetch(
-        `http://localhost:8080/api/bookings/events/${eventId}/book`,
+        `${API_BASE_URL}/api/bookings/events/${eventId}/book`,
         {
           method: "POST",
           headers: {
@@ -183,7 +184,7 @@ function Events() {
       if (!res.ok) throw new Error(data.error || "Booking failed");
       showToast("Successfully registered! 🎉");
       // Refresh events to update seat count
-      const updated = await fetch("http://localhost:8080/api/events", {
+      const updated = await fetch(`${API_BASE_URL}/api/events`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       setEvents(await updated.json());

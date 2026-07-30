@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { setAuth } from "../utils/auth";
 import GoogleLoginButton from "../components/GoogleLoginButton";
+import { API_BASE_URL } from "../config/api";
 
 function decodeToken(token) {
   try { return JSON.parse(atob(token.split(".")[1])); }
@@ -38,11 +39,13 @@ function Login() {
     if (!form.email || !form.password) { setError("All fields are required"); return; }
     try {
       setLoading(true); setError("");
-      const res = await axios.post("http://localhost:8080/api/auth/login",
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`,
         { email: form.email, password: form.password });
       finalizeLogin(res.data.token);
     } catch (err) {
-      setError(err.response?.data?.error || "Server Error");
+      const msg = err.response?.data?.error
+        || (err.request ? "Unable to reach the server. Please try again in a moment." : "Server Error");
+      setError(msg);
       setLoading(false);
     }
   };
@@ -53,7 +56,7 @@ function Login() {
   const handleGoogleCredential = async (idToken) => {
     try {
       setGoogleError(""); setError("");
-      const res = await axios.post("http://localhost:8080/api/auth/google-login", { idToken });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/google-login`, { idToken });
       finalizeLogin(res.data.token);
     } catch (err) {
       setGoogleError(err.response?.data?.error || "Google sign-in failed. Please try again.");

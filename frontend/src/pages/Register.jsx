@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 // Validates a single field and returns an error string, or "" if valid.
 function validateField(field, value) {
@@ -67,7 +68,7 @@ function Register() {
 
     try {
       setLoading(true); setServerError("");
-      const res = await axios.post("http://localhost:8080/api/auth/register", {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, {
         name: form.name, email: form.email,
         password: form.password, phone: form.mobile, role: form.role,
       });
