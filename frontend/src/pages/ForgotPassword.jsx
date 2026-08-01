@@ -7,13 +7,13 @@ const API = `${API_BASE_URL}/api/auth`;
 
 function ForgotPassword() {
   const navigate = useNavigate();
-  const [step, setStep]         = useState(1);
-  const [email, setEmail]       = useState("");
-  const [otp, setOtp]           = useState("");
+  const [step, setStep] = useState(1);
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [passwords, setPasswords] = useState({ new: "", confirm: "" });
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [success, setSuccess]   = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
 
   // Step 1 — send OTP to email
   async function handleSendOtp(e) {
@@ -66,37 +66,36 @@ function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-xl shadow-md w-[400px]">
+    <div className="min-vh-100 bg-light d-flex align-items-center justify-content-center py-5">
+      <div className="card border shadow-sm rounded-4 p-4 p-md-5 w-100" style={{ maxWidth: 420 }}>
 
         {/* Step indicator */}
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="d-flex justify-content-center gap-2 mb-4">
           {[1, 2, 3].map(s => (
-            <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-              step >= s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-500"}`}>
+            <div key={s}
+              className={`rounded-circle d-flex align-items-center justify-content-center fw-bold ${
+                step >= s ? "bg-dark text-white" : "bg-light border text-secondary"}`}
+              style={{ width: 32, height: 32 }}>
               {s}
             </div>
           ))}
         </div>
 
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 mb-4 text-sm">
-            {success}
-          </div>
+          <div className="alert alert-success">{success}</div>
         )}
 
         {/* Step 1 */}
         {step === 1 && (
           <>
-            <h2 className="text-2xl font-bold text-center mb-2 text-green-600">Forgot Password</h2>
-            <p className="text-center text-sm text-gray-500 mb-6">Enter your email to receive an OTP</p>
-            <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
+            <h2 className="fw-bold text-center mb-1">Forgot Password</h2>
+            <p className="text-center small text-secondary mb-4">Enter your email to receive an OTP</p>
+            <form onSubmit={handleSendOtp} className="d-flex flex-column gap-3">
               <input type="email" placeholder="Email Address"
-                className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400"
+                className="form-control"
                 value={email} onChange={e => setEmail(e.target.value)} />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button disabled={loading}
-                className={`py-2 rounded-lg text-white font-semibold transition ${loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}>
+              {error && <p className="text-danger small mb-0">{error}</p>}
+              <button disabled={loading} className="btn btn-dark py-2 fw-semibold">
                 {loading ? "Sending OTP..." : "Send OTP"}
               </button>
             </form>
@@ -106,25 +105,25 @@ function ForgotPassword() {
         {/* Step 2 */}
         {step === 2 && (
           <>
-            <h2 className="text-2xl font-bold text-center mb-2 text-green-600">Enter OTP</h2>
-            <p className="text-center text-sm text-gray-500 mb-6">
-              OTP sent to <span className="font-semibold">{email}</span>
+            <h2 className="fw-bold text-center mb-1">Enter OTP</h2>
+            <p className="text-center small text-secondary mb-4">
+              OTP sent to <span className="fw-semibold">{email}</span>
             </p>
-            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
+            <form onSubmit={handleVerifyOtp} className="d-flex flex-column gap-3">
               <input type="text" placeholder="6-digit OTP" maxLength={6}
-                className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400 text-center tracking-widest text-lg"
+                className="form-control text-center fs-5"
+                style={{ letterSpacing: "0.3em" }}
                 value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ""))} />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button disabled={loading}
-                className={`py-2 rounded-lg text-white font-semibold transition ${loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}>
+              {error && <p className="text-danger small mb-0">{error}</p>}
+              <button disabled={loading} className="btn btn-dark py-2 fw-semibold">
                 {loading ? "Verifying..." : "Verify OTP"}
               </button>
               <button type="button" onClick={() => { setStep(1); setError(""); setSuccess(""); }}
-                className="text-sm text-gray-500 hover:underline">
-                ← Change Email
+                className="btn btn-link btn-sm text-secondary text-decoration-none">
+                Change Email
               </button>
               <button type="button" disabled={loading} onClick={handleSendOtp}
-                className="text-sm text-green-600 hover:underline">
+                className="btn btn-link btn-sm text-decoration-none">
                 Resend OTP
               </button>
             </form>
@@ -134,27 +133,26 @@ function ForgotPassword() {
         {/* Step 3 */}
         {step === 3 && (
           <>
-            <h2 className="text-2xl font-bold text-center mb-2 text-green-600">New Password</h2>
-            <p className="text-center text-sm text-gray-500 mb-6">Set your new password</p>
-            <form onSubmit={handleResetPassword} className="flex flex-col gap-3">
+            <h2 className="fw-bold text-center mb-1">New Password</h2>
+            <p className="text-center small text-secondary mb-4">Set your new password</p>
+            <form onSubmit={handleResetPassword} className="d-flex flex-column gap-3">
               <input type="password" placeholder="New Password"
-                className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400"
+                className="form-control"
                 value={passwords.new} onChange={e => setPasswords({ ...passwords, new: e.target.value })} />
               <input type="password" placeholder="Confirm Password"
-                className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400"
+                className="form-control"
                 value={passwords.confirm} onChange={e => setPasswords({ ...passwords, confirm: e.target.value })} />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button disabled={loading}
-                className={`py-2 rounded-lg text-white font-semibold transition ${loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}>
+              {error && <p className="text-danger small mb-0">{error}</p>}
+              <button disabled={loading} className="btn btn-dark py-2 fw-semibold">
                 {loading ? "Resetting..." : "Reset Password"}
               </button>
             </form>
           </>
         )}
 
-        <p className="text-center text-sm mt-4 text-gray-600">
+        <p className="text-center small mt-3 mb-0 text-secondary">
           Remember password?{" "}
-          <Link to="/login" className="text-green-600 font-semibold hover:underline">Login here</Link>
+          <Link to="/login" className="fw-semibold text-decoration-none">Login here</Link>
         </p>
       </div>
     </div>

@@ -5,10 +5,18 @@ import com.sportsems.dto.RegisterRequest;
 import com.sportsems.entity.User;
 import com.sportsems.repository.UserRepository;
 import com.sportsems.security.JwtUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
 
@@ -21,6 +29,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder; // Fix 3: BCrypt
     private final GoogleTokenVerifierService googleTokenVerifierService;
 
+    @Value("${app.upload.dir}")
+    private String uploadDir;
+
     public AuthService(UserRepository userRepo, JwtUtil jwtUtil,
                        EmailService emailService, PasswordEncoder passwordEncoder,
                        GoogleTokenVerifierService googleTokenVerifierService) {
@@ -31,7 +42,9 @@ public class AuthService {
         this.googleTokenVerifierService = googleTokenVerifierService;
     }
 
-    public String registerUser(RegisterRequest request) {
+    // Feature 6: ORGANIZER/ADMIN self-registration must include a PDF
+    // verification document; USER registration never requires one.
+    public String registerUser(RegisterRequest request, MultipartFile document) {
         if (userRepo.findByEmail(request.getEmail()).isPresent())
             throw new RuntimeException("EMAIL_EXISTS");
         if (request.getPhone() != null && userRepo.findByMobileNumber(request.getPhone()).isPresent())
@@ -39,14 +52,30 @@ public class AuthService {
         if (!isValidPassword(request.getPassword()))
             throw new RuntimeException("WEAK_PASSWORD");
 
+        User.Role role = User.Role.valueOf(request.getRole().toUpperCase());
+        boolean requiresDocument = role == User.Role.ORGANIZER || role == User.Role.ADMIN;
+
+        if (requiresDocument) {
+            if (document == null || document.isEmpty())
+                throw new RuntimeException("DOCUMENT_REQUIRED");
+            if (!isPdf(document))
+                throw new RuntimeException("INVALID_DOCUMENT_TYPE");
+        }
+
         User user = new User();
         user.setFullName(request.getName());
         user.setEmail(request.getEmail());
         // Fix 3: BCrypt hash the password before saving
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setMobileNumber(request.getPhone());
-        user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
+        user.setRole(role);
         user.setVerificationToken(UUID.randomUUID().toString());
+
+        if (requiresDocument) {
+            String storedPath = storeDocument(document);
+            user.setDocumentPath(storedPath);
+            user.setDocumentOriginalName(document.getOriginalFilename());
+        }
 
         if (user.getRole() == User.Role.USER) {
             user.setStatus(User.Status.ACTIVE);
@@ -59,6 +88,25 @@ public class AuthService {
             emailService.sendPendingApprovalEmail(user.getEmail(), user.getFullName(),
                     user.getRole().name());
             return "PENDING_APPROVAL";
+        }
+    }
+
+    private boolean isPdf(MultipartFile file) {
+        String contentType = file.getContentType();
+        String name = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase(Locale.ROOT) : "";
+        return ("application/pdf".equalsIgnoreCase(contentType)) || name.endsWith(".pdf");
+    }
+
+    private String storeDocument(MultipartFile file) {
+        try {
+            Path dir = Paths.get(uploadDir);
+            Files.createDirectories(dir);
+            String filename = UUID.randomUUID() + ".pdf";
+            Path target = dir.resolve(filename);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            return target.toString();
+        } catch (IOException e) {
+            throw new RuntimeException("DOCUMENT_UPLOAD_FAILED");
         }
     }
 

@@ -43,8 +43,21 @@ const eventService = {
     try { await axios.delete(`${BASE_URL}/events/${id}`, { headers: getHeaders() }); }
     catch (e) { throw normalizeError(e); }
   },
-  async bookSeat(eventId) {
-    try { return (await axios.post(`${BASE_URL}/bookings/events/${eventId}/book`, {}, { headers: getHeaders() })).data; }
+  // Menu-driven event categories (Sports, Cultural Fest, Family Function,
+  // Comedy, Concert, Get Together, ...). Everyone can read the list;
+  // only organizers/admins are allowed to add a new one (enforced server-side).
+  async getCategories() {
+    try { return (await axios.get(`${BASE_URL}/categories`, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  async createCategory(name) {
+    try { return (await axios.post(`${BASE_URL}/categories`, { name }, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  // numberOfTickets: how many seats/tickets the user wants for this event.
+  // Price on the backend is registrationFee * numberOfTickets.
+  async bookSeat(eventId, numberOfTickets = 1) {
+    try { return (await axios.post(`${BASE_URL}/bookings/events/${eventId}/book`, { numberOfTickets }, { headers: getHeaders() })).data; }
     catch (e) { throw normalizeError(e); }
   },
   async cancelBooking(eventId) {
@@ -53,6 +66,11 @@ const eventService = {
   },
   async getMyBookings() {
     try { return (await axios.get(`${BASE_URL}/bookings/my`, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  // Feature 3: organizer dashboard — who has registered for one of my events
+  async getEventRegistrations(eventId) {
+    try { return (await axios.get(`${BASE_URL}/bookings/events/${eventId}`, { headers: getHeaders() })).data; }
     catch (e) { throw normalizeError(e); }
   },
   async getAllUsers() {
@@ -79,13 +97,51 @@ const eventService = {
     try { return (await axios.patch(`${BASE_URL}/admin/users/${id}/role`, { role }, { headers: getHeaders() })).data; }
     catch (e) { throw normalizeError(e); }
   },
-  async deleteUser(id) {
-    try { await axios.delete(`${BASE_URL}/admin/users/${id}`, { headers: getHeaders() }); }
-    catch (e) { throw normalizeError(e); }
+  // Feature 5: user deletion removed — no deleteUser call exists anymore.
+
+  // Feature 6: fetch a user's uploaded verification PDF as a blob URL so
+  // admin can view/download it before approving.
+  async getUserDocument(id) {
+    try {
+      const res = await axios.get(`${BASE_URL}/admin/users/${id}/document`, {
+        headers: getHeaders(),
+        responseType: "blob",
+      });
+      return URL.createObjectURL(res.data);
+    } catch (e) { throw normalizeError(e); }
   },
   async getAdminReport() {
     try { return (await axios.get(`${BASE_URL}/admin/reports`, { headers: getHeaders() })).data; }
     catch (e) { throw normalizeError(e); }
+  },
+
+  // Feature: Complaints — a USER or ORGANIZER raises one, optionally tied
+  // to a specific event. Visible to admin, and to the event's organizer too
+  // when raised by a user.
+  async raiseComplaint(data) {
+    try { return (await axios.post(`${BASE_URL}/complaints`, data, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  // Complaints raised by the logged-in user/organizer themselves.
+  async getMyComplaints() {
+    try { return (await axios.get(`${BASE_URL}/complaints/my`, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  // Organizer: complaints raised by users about the organizer's own events.
+  async getComplaintsForOrganizer() {
+    try { return (await axios.get(`${BASE_URL}/complaints/for-organizer`, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  // Admin: every complaint raised by anyone.
+  async getAllComplaints() {
+    try { return (await axios.get(`${BASE_URL}/complaints`, { headers: getHeaders() })).data; }
+    catch (e) { throw normalizeError(e); }
+  },
+  // Admin: change a complaint's status and/or leave a reply.
+  async updateComplaintStatus(id, status, adminReply) {
+    try {
+      return (await axios.patch(`${BASE_URL}/complaints/${id}/status`, { status, adminReply }, { headers: getHeaders() })).data;
+    } catch (e) { throw normalizeError(e); }
   },
 };
 

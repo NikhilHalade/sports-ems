@@ -22,7 +22,7 @@ function Login() {
 
   function finalizeLogin(token) {
     const decoded   = decodeToken(token);
-    const role      = decoded?.role || "USER";
+    const role      = (decoded?.role || "USER").trim().toUpperCase();
     const email     = decoded?.sub  || "";
     const userName  = email.split("@")[0];
 
@@ -43,9 +43,7 @@ function Login() {
         { email: form.email, password: form.password });
       finalizeLogin(res.data.token);
     } catch (err) {
-      const msg = err.response?.data?.error
-        || (err.request ? "Unable to reach the server. Please try again in a moment." : "Server Error");
-      setError(msg);
+      setError(err.response?.data?.error || "Server Error");
       setLoading(false);
     }
   };
@@ -64,51 +62,47 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-xl shadow-md w-[400px]">
-        <h2 className="text-2xl font-bold text-center mb-6 text-green-600">Welcome Back</h2>
+    <div className="min-vh-100 bg-light d-flex align-items-center justify-content-center py-5">
+      <div className="card border shadow-sm rounded-4 p-4 p-md-5 w-100" style={{ maxWidth: 420 }}>
+        <h2 className="fw-bold text-center mb-4">Welcome Back</h2>
 
         {infoMsg && (
-          <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 mb-4 text-sm">
-            {infoMsg}
-          </div>
+          <div className="alert alert-success">{infoMsg}</div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
           <input type="email" placeholder="Email Address"
-            className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400"
+            className="form-control"
             value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
           <input type="password" placeholder="Password"
-            className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400"
+            className="form-control"
             value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <div className="text-right">
-            <Link to="/forgot-password" className="text-sm text-green-600 hover:underline">
+          {error && <p className="text-danger small mb-0">{error}</p>}
+          <div className="text-end">
+            <Link to="/forgot-password" className="small text-decoration-none">
               Forgot Password?
             </Link>
           </div>
-          <button disabled={loading}
-            className={`py-2 rounded-lg text-white font-semibold transition ${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}>
+          <button disabled={loading} className="btn btn-dark py-2 fw-semibold">
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400 uppercase tracking-wide">or</span>
-          <div className="flex-1 h-px bg-gray-200" />
+        <div className="d-flex align-items-center gap-3 my-4">
+          <div className="flex-grow-1 border-top" />
+          <span className="small text-secondary text-uppercase">or</span>
+          <div className="flex-grow-1 border-top" />
         </div>
 
         <GoogleLoginButton onCredential={handleGoogleCredential} onError={setGoogleError} />
-        {googleError && <p className="text-red-500 text-sm text-center mt-2">{googleError}</p>}
-        <p className="text-center text-xs text-gray-400 mt-2">
+        {googleError && <p className="text-danger small text-center mt-2 mb-0">{googleError}</p>}
+        <p className="text-center text-secondary small mt-2 mb-0">
           Google Sign-In always logs you in as a regular user.
         </p>
 
-        <p className="text-center text-sm mt-4 text-gray-600">
+        <p className="text-center small mt-3 mb-0 text-secondary">
           New user?{" "}
-          <Link to="/register" className="text-green-600 font-semibold hover:underline">Register here</Link>
+          <Link to="/register" className="fw-semibold text-decoration-none">Register here</Link>
         </p>
       </div>
     </div>

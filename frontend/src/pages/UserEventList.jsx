@@ -17,76 +17,105 @@ function formatTime(hhmm) {
 }
 
 const STATUS_STYLES = {
-  OPEN:      { bg: "bg-green-100",  text: "text-green-700",  dot: "bg-green-500",  label: "Open"      },
-  CLOSED:    { bg: "bg-gray-100",   text: "text-gray-600",   dot: "bg-gray-400",   label: "Closed"    },
-  CANCELLED: { bg: "bg-red-100",    text: "text-red-600",    dot: "bg-red-500",    label: "Cancelled" },
+  OPEN: "bg-success-subtle text-success-emphasis border border-success-subtle",
+  CLOSED: "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle",
+  CANCELLED: "bg-danger-subtle text-danger-emphasis border border-danger-subtle",
 };
+const STATUS_LABELS = { OPEN: "Open", CLOSED: "Closed", CANCELLED: "Cancelled" };
 
 function EventCard({ event, myBookings, onBook, onCancel, loading }) {
-  const s      = STATUS_STYLES[event.status] || STATUS_STYLES.OPEN;
-  const start  = formatTime(event.startTime);
-  const end    = formatTime(event.endTime);
-  const booked = myBookings.some(b => b.eventId === event.eventId && b.status === "CONFIRMED");
+  const statusClass = STATUS_STYLES[event.status] || STATUS_STYLES.OPEN;
+  const start = formatTime(event.startTime);
+  const end = formatTime(event.endTime);
+  const myBooking = myBookings.find(b => b.eventId === event.eventId && b.status === "CONFIRMED");
+  const booked = !!myBooking;
   const isFull = event.availableSeats != null && event.availableSeats <= 0;
-  const gradients = { OPEN: "from-green-600 to-green-800", CLOSED: "from-gray-500 to-gray-700", CANCELLED: "from-red-500 to-red-700" };
+
+  // Feature: one user can book multiple tickets for the same event —
+  // price scales as fee * ticketCount. Capped by whatever seats remain.
+  const maxTickets = event.availableSeats != null ? Math.max(1, event.availableSeats) : 10;
+  const [ticketCount, setTicketCount] = useState(1);
+  const fee = Number(event.registrationFee) || 0;
+  const totalPrice = fee * ticketCount;
+
+  function updateTicketCount(next) {
+    setTicketCount(Math.min(Math.max(1, next), maxTickets));
+  }
 
   return (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
-      <div className={`bg-gradient-to-br ${gradients[event.status] || gradients.OPEN} p-5 text-white`}>
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-bold leading-tight">{event.eventName}</h3>
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${s.bg} ${s.text}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}></span>{s.label}
+    <div className="card border shadow-sm rounded-4 h-100 d-flex flex-column overflow-hidden">
+      <div className="bg-dark text-white p-3">
+        <div className="d-flex align-items-start justify-content-between gap-2">
+          <h6 className="fw-bold mb-0">{event.eventName}</h6>
+          <span className={`badge rounded-pill fw-semibold text-uppercase small ${statusClass}`}>
+            {STATUS_LABELS[event.status] || event.status}
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-white/80 text-sm">
-          <span>📍</span><span className="truncate">{event.venue}</span>
-        </div>
+        <div className="mt-1 small text-white-50 text-truncate">{event.venue}</div>
       </div>
 
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        {event.description && (
-          <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">{event.description}</p>
+      <div className="p-3 d-flex flex-column gap-3 flex-grow-1">
+        {event.category && (
+          <span className="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle align-self-start text-uppercase small">
+            {event.category}
+          </span>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-0.5">Date</p>
-            <p className="text-gray-800 font-bold text-sm">{formatDate(event.eventDate)}</p>
+        {event.description && (
+          <p className="text-secondary small mb-0" style={{
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+          }}>{event.description}</p>
+        )}
+        <div className="row g-2">
+          <div className="col-6">
+            <div className="bg-light rounded-3 p-2">
+              <p className="text-secondary fw-semibold text-uppercase mb-0" style={{ fontSize: "0.68rem" }}>Date</p>
+              <p className="fw-bold small mb-0">{formatDate(event.eventDate)}</p>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-0.5">Time</p>
-            <p className="text-gray-800 font-bold text-sm">{start ? `${start}${end ? ` – ${end}` : ""}` : "TBA"}</p>
+          <div className="col-6">
+            <div className="bg-light rounded-3 p-2">
+              <p className="text-secondary fw-semibold text-uppercase mb-0" style={{ fontSize: "0.68rem" }}>Time</p>
+              <p className="fw-bold small mb-0">{start ? `${start}${end ? ` – ${end}` : ""}` : "TBA"}</p>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-0.5">Fee</p>
-            <p className="text-gray-800 font-bold text-sm">
-              {event.registrationFee > 0 ? `₹${Number(event.registrationFee).toFixed(2)}` : "Free"}
-            </p>
+          <div className="col-6">
+            <div className="bg-light rounded-3 p-2">
+              <p className="text-secondary fw-semibold text-uppercase mb-0" style={{ fontSize: "0.68rem" }}>
+                {fee > 0 && !booked && event.status === "OPEN" ? `Total (x${ticketCount})` : "Fee"}
+              </p>
+              <p className="fw-bold small mb-0">
+                {fee > 0
+                  ? `₹${(booked ? (myBooking.totalAmount ?? fee * (myBooking.numberOfTickets || 1)) : totalPrice).toFixed(2)}`
+                  : "Free"}
+              </p>
+            </div>
           </div>
           {/* FR-3.1 — live seat count */}
-          <div className={`rounded-xl p-3 ${isFull ? "bg-red-50" : "bg-green-50"}`}>
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-0.5">Seats</p>
-            {event.availableSeats != null ? (
-              <p className={`font-bold text-sm ${isFull ? "text-red-600" : "text-green-700"}`}>
-                {isFull ? "Full" : `${event.availableSeats} left`}
-                {event.maxParticipants && <span className="text-gray-400 font-normal"> / {event.maxParticipants}</span>}
-              </p>
-            ) : (
-              <p className="text-gray-800 font-bold text-sm">Unlimited</p>
-            )}
+          <div className="col-6">
+            <div className={`rounded-3 p-2 ${isFull ? "bg-danger-subtle" : "bg-success-subtle"}`}>
+              <p className="text-secondary fw-semibold text-uppercase mb-0" style={{ fontSize: "0.68rem" }}>Seats</p>
+              {event.availableSeats != null ? (
+                <p className={`fw-bold small mb-0 ${isFull ? "text-danger-emphasis" : "text-success-emphasis"}`}>
+                  {isFull ? "Full" : `${event.availableSeats} left`}
+                  {event.maxParticipants && <span className="text-secondary fw-normal"> / {event.maxParticipants}</span>}
+                </p>
+              ) : (
+                <p className="fw-bold small mb-0">Unlimited</p>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Seat bar */}
         {event.maxParticipants && event.availableSeats != null && (
-          <div className="mt-1">
-            <div className="w-full bg-gray-200 rounded-full h-2">
+          <div>
+            <div className="progress" style={{ height: 6 }}>
               <div
-                className={`h-2 rounded-full transition-all ${isFull ? "bg-red-500" : "bg-green-500"}`}
+                className={`progress-bar ${isFull ? "bg-danger" : "bg-success"}`}
                 style={{ width: `${Math.max(0, Math.min(100, ((event.maxParticipants - event.availableSeats) / event.maxParticipants) * 100))}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-secondary mt-1 mb-0" style={{ fontSize: "0.7rem" }}>
               {event.maxParticipants - event.availableSeats} / {event.maxParticipants} booked
             </p>
           </div>
@@ -95,32 +124,60 @@ function EventCard({ event, myBookings, onBook, onCancel, loading }) {
 
       {/* Action buttons */}
       {event.status === "OPEN" && (
-        <div className="px-5 pb-5 flex gap-2">
+        <div className="p-3 pt-0 d-flex flex-column gap-2">
           {booked ? (
-            <>
-              <div className="flex-1 py-2.5 bg-green-100 text-green-700 font-semibold rounded-xl text-center text-sm">
-                ✓ Registered
+            <div className="d-flex gap-2">
+              <div className="flex-grow-1 py-2 bg-success-subtle text-success-emphasis fw-semibold rounded-3 text-center small">
+                Registered{myBooking.numberOfTickets > 1 ? ` · ${myBooking.numberOfTickets} tickets` : ""}
               </div>
               <button
                 disabled={loading === event.eventId}
                 onClick={() => onCancel(event.eventId)}
-                className="px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 font-semibold rounded-xl hover:bg-red-100 transition text-sm"
+                className="btn btn-outline-danger btn-sm"
               >
                 {loading === event.eventId ? "..." : "Cancel"}
               </button>
-            </>
+            </div>
           ) : (
-            <button
-              disabled={isFull || loading === event.eventId}
-              onClick={() => onBook(event.eventId)}
-              className={`w-full py-2.5 font-semibold rounded-xl transition text-sm ${
-                isFull
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-            >
-              {loading === event.eventId ? "Processing..." : isFull ? "No Seats Available" : "Register Now"}
-            </button>
+            <>
+              {!isFull && (
+                <div className="d-flex align-items-center justify-content-between bg-light rounded-3 px-3 py-2">
+                  <span className="small text-secondary fw-semibold text-uppercase">Tickets</span>
+                  <div className="d-flex align-items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={ticketCount <= 1}
+                      onClick={() => updateTicketCount(ticketCount - 1)}
+                      className="btn btn-outline-secondary btn-sm py-0 px-2"
+                    >
+                      −
+                    </button>
+                    <span className="fw-bold small" style={{ width: 24, textAlign: "center", display: "inline-block" }}>{ticketCount}</span>
+                    <button
+                      type="button"
+                      disabled={ticketCount >= maxTickets}
+                      onClick={() => updateTicketCount(ticketCount + 1)}
+                      className="btn btn-outline-secondary btn-sm py-0 px-2"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+              <button
+                disabled={isFull || loading === event.eventId}
+                onClick={() => onBook(event.eventId, ticketCount)}
+                className={`btn btn-sm ${isFull ? "btn-outline-secondary disabled" : "btn-dark"}`}
+              >
+                {loading === event.eventId
+                  ? "Processing..."
+                  : isFull
+                  ? "No Seats Available"
+                  : fee > 0
+                  ? `Register Now · ₹${totalPrice.toFixed(2)}`
+                  : "Register Now"}
+              </button>
+            </>
           )}
         </div>
       )}
@@ -130,13 +187,20 @@ function EventCard({ event, myBookings, onBook, onCancel, loading }) {
 
 function UserEventList() {
   const navigate = useNavigate();
-  const [events, setEvents]         = useState([]);
+  const [events, setEvents] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
-  const [error, setError]           = useState("");
-  const [toast, setToast]           = useState(null);
-  const [filter, setFilter]         = useState("ALL");
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
+  const [filter, setFilter] = useState("ALL");
+  // Menu-driven event type filter — users pick from the list, they cannot add to it.
+  const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+
+  useEffect(() => {
+    eventService.getCategories().then(setCategories).catch(() => {});
+  }, []);
 
   const userName = getUserName() || "there";
 
@@ -162,11 +226,15 @@ function UserEventList() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  async function handleBook(eventId) {
+  async function handleBook(eventId, ticketCount = 1) {
     setActionLoading(eventId);
     try {
-      await eventService.bookSeat(eventId);
-      showToast("Successfully registered for event! 🎉");
+      await eventService.bookSeat(eventId, ticketCount);
+      showToast(
+        ticketCount > 1
+          ? `Successfully booked ${ticketCount} tickets!`
+          : "Successfully registered for event!"
+      );
       await loadData();
     } catch (err) {
       showToast(err.message, "error");
@@ -193,7 +261,9 @@ function UserEventList() {
     navigate("/login");
   }
 
-  const filtered = filter === "ALL" ? events : events.filter(e => e.status === filter);
+  const filtered = events
+    .filter(e => filter === "ALL" || e.status === filter)
+    .filter(e => categoryFilter === "ALL" || e.category === categoryFilter);
   const counts = {
     ALL: events.length,
     OPEN: events.filter(e => e.status === "OPEN").length,
@@ -203,43 +273,44 @@ function UserEventList() {
   const myConfirmed = myBookings.filter(b => b.status === "CONFIRMED").length;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-vh-100 bg-light">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-white font-semibold text-sm transition-all ${
-          toast.type === "error" ? "bg-red-500" : "bg-green-600"
-        }`}>
+        <div className={`position-fixed top-0 end-0 m-3 px-4 py-3 rounded-3 shadow text-white fw-semibold small ${
+          toast.type === "error" ? "bg-danger" : "bg-success"
+        }`} style={{ zIndex: 1080 }}>
           {toast.msg}
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-green-700 text-white px-6 py-4 flex items-center justify-between shadow-md">
+      <div className="bg-dark text-white px-4 py-3 d-flex align-items-center justify-content-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">🏆 Sports Events</h1>
-          <p className="text-green-200 text-sm mt-0.5">
+          <h1 className="fs-3 fw-bold mb-0">Sports Events</h1>
+          <p className="text-white-50 small mt-1 mb-0">
             Welcome, {userName} · {myConfirmed} active registration{myConfirmed !== 1 ? "s" : ""}
           </p>
         </div>
-        <button onClick={handleLogout}
-          className="bg-white text-green-700 font-semibold px-4 py-2 rounded-lg hover:bg-green-50 transition text-sm">
+        <button onClick={handleLogout} className="btn btn-light btn-sm fw-semibold">
           Logout
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="container py-5">
         {/* Stats */}
         {!loading && events.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="row g-3 mb-4">
             {[
-              { label: "Total Events",    value: counts.ALL,       color: "text-gray-800"  },
-              { label: "Open",            value: counts.OPEN,      color: "text-green-600" },
-              { label: "My Registrations",value: myConfirmed,      color: "text-blue-600"  },
-              { label: "Closed/Cancelled",value: counts.CLOSED + counts.CANCELLED, color: "text-gray-500" },
+              { label: "Total Events", value: counts.ALL, color: "" },
+              { label: "Open", value: counts.OPEN, color: "text-success" },
+              { label: "My Registrations", value: myConfirmed, color: "text-primary" },
+              { label: "Closed/Cancelled", value: counts.CLOSED + counts.CANCELLED, color: "text-secondary" },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-2xl shadow p-4 text-center">
-                <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
-                <p className="text-gray-400 text-xs uppercase tracking-wide mt-1 font-semibold">{s.label}</p>
+              <div className="col-6 col-md-3" key={s.label}>
+                <div className="card border shadow-sm text-center p-3 h-100">
+                  <p className={`fs-3 fw-bold mb-0 ${s.color}`}>{s.value}</p>
+                  <p className="text-secondary small text-uppercase fw-semibold mb-0 mt-1">{s.label}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -247,37 +318,55 @@ function UserEventList() {
 
         {/* Filter tabs */}
         {!loading && events.length > 0 && (
-          <div className="flex gap-2 mb-6 flex-wrap">
+          <div className="d-flex gap-2 mb-3 flex-wrap">
             {["ALL", "OPEN", "CLOSED", "CANCELLED"].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                  filter === f ? "bg-green-600 text-white shadow" : "bg-white text-gray-600 hover:bg-green-50 border border-gray-200"
-                }`}>
+                className={`btn btn-sm rounded-pill ${filter === f ? "btn-dark" : "btn-outline-secondary"}`}>
                 {f === "ALL" ? "All Events" : f.charAt(0) + f.slice(1).toLowerCase()}
-                <span className="ml-2 text-xs opacity-70">({counts[f]})</span>
+                <span className="ms-2 small opacity-75">({counts[f]})</span>
               </button>
             ))}
           </div>
         )}
 
-        {error && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 mb-6">{error}</div>}
+        {/* Event type (category) menu — menu-driven, view/filter only */}
+        {!loading && events.length > 0 && categories.length > 0 && (
+          <div className="mb-4" style={{ maxWidth: 260 }}>
+            <label className="form-label small text-secondary fw-semibold text-uppercase">
+              Event Type
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="form-select form-select-sm"
+            >
+              <option value="ALL">All Types</option>
+              {categories.map(c => (
+                <option key={c.categoryId} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {error && <div className="alert alert-danger">{error}</div>}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-            <div className="w-10 h-10 border-4 border-gray-200 border-t-green-600 rounded-full animate-spin mb-4" />
-            <p>Loading events…</p>
+          <div className="d-flex flex-column align-items-center justify-content-center py-5 text-secondary">
+            <div className="spinner-border mb-3" role="status" />
+            <p className="mb-0">Loading events…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-24 text-gray-400">
-            <p className="text-5xl mb-4">🏟️</p>
-            <h3 className="text-xl font-bold text-gray-600 mb-2">No events found</h3>
-            <p className="text-sm">{filter === "ALL" ? "No events yet. Check back soon!" : `No ${filter.toLowerCase()} events.`}</p>
+          <div className="text-center py-5 text-secondary">
+            <h3 className="fw-bold mb-2">No events found</h3>
+            <p className="small mb-0">{filter === "ALL" ? "No events yet. Check back soon!" : `No ${filter.toLowerCase()} events.`}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="row g-4">
             {filtered.map(event => (
-              <EventCard key={event.eventId} event={event} myBookings={myBookings}
-                onBook={handleBook} onCancel={handleCancel} loading={actionLoading} />
+              <div className="col-sm-6 col-lg-4" key={event.eventId}>
+                <EventCard event={event} myBookings={myBookings}
+                  onBook={handleBook} onCancel={handleCancel} loading={actionLoading} />
+              </div>
             ))}
           </div>
         )}

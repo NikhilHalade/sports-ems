@@ -37,6 +37,15 @@ public class User {
     private LocalDateTime lastLogin;
     private LocalDateTime createdAt;
 
+    // Feature 6: verification document (PDF) uploaded by ORGANIZER/ADMIN at
+    // registration time, so admin can validate their identity before approval.
+    private String documentPath;
+    private String documentOriginalName;
+
+    // Feature: an admin must open/review this document at least once before
+    // this account can be approved. Set the moment the document is fetched.
+    private LocalDateTime documentViewedAt;
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
@@ -80,4 +89,10 @@ public class User {
     public LocalDateTime getLastLogin() { return lastLogin; }
     public void setLastLogin(LocalDateTime t) { this.lastLogin = t; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getDocumentPath() { return documentPath; }
+    public void setDocumentPath(String documentPath) { this.documentPath = documentPath; }
+    public String getDocumentOriginalName() { return documentOriginalName; }
+    public void setDocumentOriginalName(String documentOriginalName) { this.documentOriginalName = documentOriginalName; }
+    public LocalDateTime getDocumentViewedAt() { return documentViewedAt; }
+    public void setDocumentViewedAt(LocalDateTime documentViewedAt) { this.documentViewedAt = documentViewedAt; }
 }

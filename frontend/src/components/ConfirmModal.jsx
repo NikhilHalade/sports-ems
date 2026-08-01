@@ -24,20 +24,25 @@ function ConfirmModal({
   if (!isOpen) return null
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 p-3"
+      style={{ zIndex: 1050 }}
+      onClick={onCancel}
+    >
       <div
-        className="modal-card"
+        className="card border-0 shadow-sm rounded-4 p-4 w-100"
+        style={{ maxWidth: 420 }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 id="confirm-modal-title">{title}</h3>
-        <p>{message}</p>
-        <div className="modal-actions">
+        <h5 id="confirm-modal-title" className="fw-bold mb-2">{title}</h5>
+        <p className="text-secondary mb-4">{message}</p>
+        <div className="d-flex justify-content-end gap-2">
           <button
             type="button"
-            className="btn btn--secondary"
+            className="btn btn-outline-secondary"
             onClick={onCancel}
             disabled={isProcessing}
           >
@@ -45,7 +50,7 @@ function ConfirmModal({
           </button>
           <button
             type="button"
-            className="btn btn--danger-solid"
+            className="btn btn-danger"
             onClick={onConfirm}
             disabled={isProcessing}
           >

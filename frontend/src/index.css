@@ -1,4 +1,3 @@
-@import "tailwindcss";
 :root {
   --color-bg: #F4F6F5;
   --color-surface: #FFFFFF;
@@ -9,256 +8,56 @@
   --color-text: #1A1A2E;
   --color-muted: #687076;
   --color-border: #E2E5E3;
-  --status-open-bg: #E6F4EA;
-  --status-open-text: #1E7B34;
-  --status-closed-bg: #ECEEF0;
-  --status-closed-text: #5B6168;
-  --status-cancelled-bg: #FCE8E6;
-  --status-cancelled-text: #C5221F;
-  --color-success-bg: #E6F4EA;
-  --color-success-text: #1E7B34;
-  --color-success-border: #A8D9B5;
-  --color-error-bg: #FCE8E6;
-  --color-error-text: #C5221F;
-  --color-error-border: #F3B4AE;
   --font-body: 'Inter', sans-serif;
-  --font-mono: 'Roboto Mono', monospace;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-card: 0 1px 2px rgba(15,46,32,0.06), 0 4px 16px rgba(15,46,32,0.06);
-  --shadow-modal: 0 12px 40px rgba(15,46,32,0.25);
-  --max-width: 1080px;
 }
 
-.page-container {
-  width: 100%;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+/* ===================================================
+   Feature 7: Dark mode
+   Toggled by setting data-theme="dark" on <html> (see
+   src/utils/theme.js + the toggle button in Navbar).
+   =================================================== */
+[data-theme="dark"] {
+  --color-bg: #101614;
+  --color-surface: #182420;
+  --color-primary: #3FA97A;
+  --color-primary-dark: #E9F5EE;
+  --color-accent: #FF8156;
+  --color-accent-dark: #FFA485;
+  --color-text: #E7EAE8;
+  --color-muted: #9BA6A1;
+  --color-border: #2A3733;
 }
-.page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
-  flex-wrap: wrap;
-}
-.page-header__eyebrow {
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-accent-dark);
-  display: block;
-  margin-bottom: 0.35rem;
-}
-.page-header__subtitle {
-  color: var(--color-muted);
-  margin-top: 0.35rem;
-  font-size: 0.95rem;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 1.25rem;
-  font-weight: 600;
-  font-size: 0.92rem;
-  cursor: pointer;
-  transition: transform 0.06s ease, background 0.15s ease;
-  white-space: nowrap;
-  text-decoration: none;
-}
-.btn:active { transform: translateY(1px); }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-.btn--primary { background: var(--color-accent); color: var(--color-primary-dark); }
-.btn--primary:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
-.btn--secondary { background: var(--color-surface); color: var(--color-primary-dark); border: 1.5px solid var(--color-border); }
-.btn--secondary:hover:not(:disabled) { border-color: var(--color-primary); }
-.btn--danger { background: #fff; color: var(--status-cancelled-text); border: 1.5px solid var(--status-cancelled-text); }
-.btn--danger:hover:not(:disabled) { background: var(--status-cancelled-bg); }
-.btn--danger-solid { background: var(--status-cancelled-text); color: #fff; }
-.btn--danger-solid:hover:not(:disabled) { background: #A8190F; }
-.btn--sm { padding: 0.4rem 0.85rem; font-size: 0.82rem; }
-.btn--block { width: 100%; }
 
-.card {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--color-border);
-  padding: 1.75rem;
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem 1.5rem;
-}
-.form-field { display: flex; flex-direction: column; gap: 0.4rem; }
-.form-field--full { grid-column: 1 / -1; }
-.form-label { font-weight: 600; font-size: 0.88rem; color: var(--color-primary-dark); }
-.form-label .required { color: var(--color-accent-dark); margin-left: 2px; }
-.form-input, .form-textarea, .form-select {
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.75rem;
-  background: #fff;
+html, body { background: var(--color-bg); color: var(--color-text); }
+
+/* The app is built with Bootstrap 5 utility/component classes throughout.
+   These overrides redirect the most common ones to the theme variables
+   above so the dark-mode toggle affects the whole app. */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-light { background-color: var(--color-surface) !important; }
+[data-theme="dark"] body.bg-light,
+[data-theme="dark"] .min-vh-100.bg-light { background-color: var(--color-bg) !important; }
+[data-theme="dark"] .text-dark,
+[data-theme="dark"] .text-body { color: var(--color-text) !important; }
+[data-theme="dark"] .text-secondary,
+[data-theme="dark"] .text-muted { color: var(--color-muted) !important; }
+[data-theme="dark"] .border,
+[data-theme="dark"] .border-top,
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-end,
+[data-theme="dark"] .border-start,
+[data-theme="dark"] .table > :not(caption) > * > * { border-color: var(--color-border) !important; }
+[data-theme="dark"] .card,
+[data-theme="dark"] .navbar.bg-white,
+[data-theme="dark"] .table { background-color: var(--color-surface); color: var(--color-text); }
+[data-theme="dark"] .table-light { background-color: var(--color-bg); color: var(--color-text); }
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] textarea {
+  background-color: var(--color-surface);
   color: var(--color-text);
-  transition: border-color 0.15s ease;
-  font-size: 1rem;
-  font-family: inherit;
+  border-color: var(--color-border);
 }
-.form-input:focus, .form-textarea:focus, .form-select:focus {
-  border-color: var(--color-primary);
-  outline: none;
-}
-.form-input--error, .form-textarea--error, .form-select--error {
-  border-color: var(--status-cancelled-text);
-}
-.form-textarea { resize: vertical; min-height: 90px; }
-.form-error-text { font-size: 0.78rem; color: var(--status-cancelled-text); }
-.form-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.75rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.table-wrapper {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--color-border);
-  overflow-x: auto;
-}
-.event-table { width: 100%; border-collapse: collapse; min-width: 760px; }
-.event-table thead th {
-  text-align: left;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  padding: 0.95rem 1.1rem;
-  border-bottom: 2px solid var(--color-border);
-  background: #FAFBFA;
-}
-.event-table tbody td {
-  padding: 0.95rem 1.1rem;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.92rem;
-  vertical-align: middle;
-}
-.event-table tbody tr:last-child td { border-bottom: none; }
-.event-table tbody tr:hover { background: #FBFBF8; }
-.event-table__name { font-weight: 600; color: var(--color-primary-dark); }
-.event-table__muted { color: var(--color-muted); font-size: 0.85rem; }
-.event-table__actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.badge--open { background: var(--status-open-bg); color: var(--status-open-text); }
-.badge--closed { background: var(--status-closed-bg); color: var(--status-closed-text); }
-.badge--cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled-text); }
-
-.alert {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1.1rem;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid transparent;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-.alert--success { background: var(--color-success-bg); color: var(--color-success-text); border-color: var(--color-success-border); }
-.alert--error { background: var(--color-error-bg); color: var(--color-error-text); border-color: var(--color-error-border); }
-.alert__close { background: none; border: none; cursor: pointer; font-size: 1rem; color: inherit; opacity: 0.6; }
-.alert__close:hover { opacity: 1; }
-
-.loader-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 4rem 1rem;
-  color: var(--color-muted);
-}
-.spinner {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 3.5px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state { text-align: center; padding: 4rem 1.5rem; color: var(--color-muted); }
-.empty-state h3 { color: var(--color-primary-dark); margin-bottom: 0.5rem; }
-.empty-state p { margin-bottom: 1.5rem; }
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15,46,32,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  z-index: 1000;
-}
-.modal-card {
-  background: #fff;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-modal);
-  width: 100%;
-  max-width: 420px;
-  padding: 1.75rem;
-}
-.modal-card h3 { margin-bottom: 0.6rem; }
-.modal-card p { color: var(--color-muted); font-size: 0.92rem; margin-bottom: 1.5rem; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-
-.stat-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--color-border);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 1.75rem;
-}
-.stat-cell { background: var(--color-surface); padding: 1rem 1.25rem; }
-.stat-cell__value { font-size: 1.9rem; color: var(--color-primary-dark); line-height: 1; }
-.stat-cell__label {
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  margin-top: 0.35rem;
-}
-
-@media (max-width: 640px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .stat-strip { grid-template-columns: repeat(2, 1fr); }
-  .page-header { align-items: flex-start; }
-}
+[data-theme="dark"] .form-control::placeholder { color: var(--color-muted); opacity: 1; }
+[data-theme="dark"] .btn-outline-secondary { color: var(--color-text); border-color: var(--color-border); }
+[data-theme="dark"] .btn-light { background-color: var(--color-surface); color: var(--color-text); border-color: var(--color-border); }

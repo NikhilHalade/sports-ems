@@ -25,16 +25,16 @@ function CreateEvent() {
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
+    <div className="container py-5">
+      <div className="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-4">
         <div>
-          <h1>Create Event</h1>
-          <p className="page-header__subtitle">
+          <h1 className="fw-bold mb-1">Create Event</h1>
+          <p className="text-secondary mb-0">
             Fill in the details below to add a new event to the roster.
           </p>
         </div>
-        <Link to="/events/manage" className="btn btn--secondary">
-          ← Back to Events
+        <Link to="/events/manage" className="btn btn-outline-secondary">
+          Back to Events
         </Link>
       </div>
 

@@ -1,6 +1,7 @@
 package com.sportsems.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,10 +30,19 @@ public class Booking {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    // Feature: multiple tickets per booking — one user can book more than
+    // one seat for the same event, and the total price scales accordingly.
+    @Column(name = "number_of_tickets", nullable = false)
+    private Integer numberOfTickets = 1;
+
+    @Column(name = "total_amount", precision = 10, scale = 2)
+    private BigDecimal totalAmount;
+
     @PrePersist
     protected void onCreate() {
         this.bookedAt = LocalDateTime.now();
         if (this.status == null) this.status = BookingStatus.CONFIRMED;
+        if (this.numberOfTickets == null) this.numberOfTickets = 1;
     }
 
     public enum BookingStatus { CONFIRMED, CANCELLED }
@@ -50,4 +60,8 @@ public class Booking {
     public void setBookedAt(LocalDateTime bookedAt) { this.bookedAt = bookedAt; }
     public LocalDateTime getCancelledAt() { return cancelledAt; }
     public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
+    public Integer getNumberOfTickets() { return numberOfTickets; }
+    public void setNumberOfTickets(Integer numberOfTickets) { this.numberOfTickets = numberOfTickets; }
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
 }

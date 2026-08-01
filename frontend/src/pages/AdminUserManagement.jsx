@@ -3,19 +3,22 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import eventService from "../services/eventService";
 
-const ROLE_COLORS   = { ADMIN: "bg-purple-100 text-purple-700", ORGANIZER: "bg-blue-100 text-blue-700", USER: "bg-gray-100 text-gray-600" };
-const STATUS_COLORS = { ACTIVE: "bg-green-100 text-green-700", LOCKED: "bg-red-100 text-red-600", PENDING_APPROVAL: "bg-yellow-100 text-yellow-700" };
+const ROLE_COLORS = { ADMIN: "bg-dark-subtle text-dark-emphasis", ORGANIZER: "bg-primary-subtle text-primary-emphasis", USER: "bg-secondary-subtle text-secondary-emphasis" };
+const STATUS_COLORS = { ACTIVE: "bg-success-subtle text-success-emphasis", LOCKED: "bg-danger-subtle text-danger-emphasis", PENDING_APPROVAL: "bg-warning-subtle text-warning-emphasis" };
 
 function AdminUserManagement() {
   const navigate = useNavigate();
-  const [tab, setTab]             = useState("ALL");   // ALL | PENDING
-  const [users, setUsers]         = useState([]);
-  const [pending, setPending]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [actionId, setActionId]   = useState(null);
-  const [toast, setToast]         = useState(null);
-  const [search, setSearch]       = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [tab, setTab] = useState("ALL"); // ALL | PENDING
+  const [users, setUsers] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [search, setSearch] = useState("");
+  const [docLoadingId, setDocLoadingId] = useState(null);
+  // Feature: an organizer/admin's verification document must be opened by
+  // the admin before that account can be approved.
+  const [viewedDocs, setViewedDocs] = useState(new Set());
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3500);
@@ -35,11 +38,37 @@ function AdminUserManagement() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Feature 6: view the PDF an organizer/admin uploaded at registration,
+  // to validate it before approving their account.
+  async function handleViewDocument(id) {
+    setDocLoadingId(id);
+    try {
+      const url = await eventService.getUserDocument(id);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setViewedDocs(prev => new Set(prev).add(id));
+    } catch (e) { showToast(e.message, "error"); }
+    finally { setDocLoadingId(null); }
+  }
+
+  // A pending user can only be approved once their document has been opened
+  // by the admin — unless they didn't upload one at all, in which case there's
+  // nothing to review and approval isn't blocked. Backend persists this via
+  // `documentViewed`; `viewedDocs` just gives instant feedback in this tab
+  // before the list is reloaded.
+  function canApprove(u) {
+    return !u.hasDocument || u.documentViewed || viewedDocs.has(u.id);
+  }
+
   async function handleApprove(id, name) {
+    const target = [...pending, ...users].find(u => u.id === id);
+    if (target && !canApprove(target)) {
+      showToast("Please view the verification document before approving.", "error");
+      return;
+    }
     setActionId(id);
     try {
       await eventService.approveUser(id);
-      showToast(`✅ ${name} approved! They will receive an email notification.`);
+      showToast(`${name} approved! They will receive an email notification.`);
       await loadData();
     } catch (e) { showToast(e.message, "error"); }
     finally { setActionId(null); }
@@ -75,136 +104,118 @@ function AdminUserManagement() {
     finally { setActionId(null); }
   }
 
-  async function handleDelete(id) {
-    setActionId(id);
-    try {
-      await eventService.deleteUser(id);
-      showToast("User deleted");
-      setConfirmDelete(null);
-      await loadData();
-    } catch (e) { showToast(e.message, "error"); }
-    finally { setActionId(null); }
-  }
-
   const filtered = users.filter(u =>
     u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-vh-100 bg-light">
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-white font-semibold text-sm max-w-sm ${
-          toast.type === "error" ? "bg-red-500" : "bg-green-600"}`}>
+        <div className={`position-fixed top-0 end-0 m-3 px-4 py-3 rounded-3 shadow text-white fw-semibold small ${
+          toast.type === "error" ? "bg-danger" : "bg-success"}`} style={{ zIndex: 1080, maxWidth: 360 }}>
           {toast.msg}
         </div>
       )}
 
-      {/* Delete Confirm Modal */}
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Delete User?</h3>
-            <p className="text-gray-500 text-sm mb-5">
-              Permanently delete <strong>{confirmDelete.fullName}</strong>? This cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm">Cancel</button>
-              <button onClick={() => handleDelete(confirmDelete.id)} disabled={actionId === confirmDelete.id}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm disabled:opacity-50">
-                {actionId === confirmDelete.id ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
-      <div className="bg-purple-700 text-white px-6 py-4 flex items-center justify-between shadow-md flex-wrap gap-3">
+      <div className="bg-dark text-white px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold">👤 User Management</h1>
-          <p className="text-purple-200 text-sm mt-0.5">
+          <h1 className="fs-3 fw-bold mb-0">User Management</h1>
+          <p className="text-white-50 small mt-1 mb-0">
             {users.length} total users
             {pending.length > 0 && (
-              <span className="ml-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="ms-2 badge rounded-pill bg-warning text-dark">
                 {pending.length} pending
               </span>
             )}
           </p>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          <Link to="/admin/reports" className="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 text-sm">
-            📊 Reports
-          </Link>
-          <Link to="/events/manage" className="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-800 text-sm">
-            Events
-          </Link>
-          <button onClick={() => { clearAuth(); navigate("/login"); }}
-            className="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 text-sm">
+        <div className="d-flex gap-2 flex-wrap">
+          <Link to="/admin/reports" className="btn btn-light btn-sm fw-semibold">Reports</Link>
+          <Link to="/admin/venues" className="btn btn-light btn-sm fw-semibold">Venues</Link>
+          <Link to="/admin/complaints" className="btn btn-light btn-sm fw-semibold">Complaints</Link>
+          <Link to="/events/manage" className="btn btn-outline-light btn-sm fw-semibold">Events</Link>
+          <button onClick={() => { clearAuth(); navigate("/login"); }} className="btn btn-light btn-sm fw-semibold">
             Logout
           </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="container py-5">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="row g-3 mb-4">
           {[
-            { label: "Total Users",     value: users.length,                                     color: "text-gray-800"   },
-            { label: "Active",          value: users.filter(u => u.status === "ACTIVE").length,  color: "text-green-600"  },
-            { label: "Pending Approval",value: pending.length,                                   color: "text-yellow-600" },
-            { label: "Locked",          value: users.filter(u => u.status === "LOCKED").length,  color: "text-red-500"    },
+            { label: "Total Users", value: users.length, color: "" },
+            { label: "Active", value: users.filter(u => u.status === "ACTIVE").length, color: "text-success" },
+            { label: "Pending Approval", value: pending.length, color: "text-warning" },
+            { label: "Locked", value: users.filter(u => u.status === "LOCKED").length, color: "text-danger" },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl shadow p-4 text-center">
-              <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
-              <p className="text-gray-400 text-xs uppercase tracking-wide mt-1 font-semibold">{s.label}</p>
+            <div className="col-6 col-md-3" key={s.label}>
+              <div className="card border shadow-sm text-center p-3 h-100">
+                <p className={`fs-3 fw-bold mb-0 ${s.color}`}>{s.value}</p>
+                <p className="text-secondary small text-uppercase fw-semibold mb-0 mt-1">{s.label}</p>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-4">
+        <div className="d-flex gap-2 mb-3">
           {["ALL", "PENDING"].map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-full font-semibold text-sm transition ${
-                tab === t ? "bg-purple-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-purple-50"
-              }`}>
-              {t === "PENDING" ? `⏳ Pending Approval (${pending.length})` : "All Users"}
+              className={`btn btn-sm rounded-pill ${tab === t ? "btn-dark" : "btn-outline-secondary"}`}>
+              {t === "PENDING" ? `Pending Approval (${pending.length})` : "All Users"}
             </button>
           ))}
         </div>
 
         {/* PENDING APPROVALS TAB */}
         {tab === "PENDING" && (
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
+          <div className="card border shadow-sm rounded-4 overflow-hidden">
             {pending.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <p className="text-4xl mb-3">✅</p>
-                <p className="font-semibold">No pending approvals</p>
+              <div className="text-center py-5 text-secondary">
+                <p className="fw-semibold mb-0">No pending approvals</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {pending.map(u => (
-                  <div key={u.id} className="p-5 flex items-center justify-between flex-wrap gap-4">
+              <div>
+                {pending.map((u, i) => (
+                  <div key={u.id} className={`p-4 d-flex align-items-center justify-content-between flex-wrap gap-3 ${i > 0 ? "border-top" : ""}`}>
                     <div>
-                      <p className="font-bold text-gray-800">{u.fullName}</p>
-                      <p className="text-sm text-gray-500">{u.email} · {u.mobileNumber}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Role: <span className={`font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[u.role]}`}>{u.role}</span>
+                      <p className="fw-bold mb-0">{u.fullName}</p>
+                      <p className="small text-secondary mb-0">{u.email} · {u.mobileNumber}</p>
+                      <p className="small text-secondary mt-1 mb-0">
+                        Role: <span className={`badge rounded-pill fw-bold ${ROLE_COLORS[u.role]}`}>{u.role}</span>
                         &nbsp;· Registered: {u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-IN") : "—"}
                       </p>
+                      {/* Feature 6: validate the organizer/admin's uploaded document before approving */}
+                      {u.hasDocument ? (
+                        <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                          <button onClick={() => handleViewDocument(u.id)} disabled={docLoadingId === u.id}
+                            className="btn btn-outline-primary btn-sm">
+                            {docLoadingId === u.id ? "Opening..." : (u.documentViewed || viewedDocs.has(u.id)) ? "View Document Again" : "View Verification Document"}
+                          </button>
+                          {(u.documentViewed || viewedDocs.has(u.id)) ? (
+                            <span className="small text-success fw-semibold">Document reviewed</span>
+                          ) : (
+                            <span className="small text-warning-emphasis fw-semibold">Review the document to enable approval</span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mt-2 small text-danger fw-semibold mb-0">No verification document uploaded</p>
+                      )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="d-flex gap-2">
                       <button onClick={() => handleApprove(u.id, u.fullName)}
-                        disabled={actionId === u.id}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-50">
-                        {actionId === u.id ? "..." : "✅ Approve"}
+                        disabled={actionId === u.id || !canApprove(u)}
+                        title={!canApprove(u) ? "View the verification document first" : undefined}
+                        className="btn btn-dark btn-sm">
+                        {actionId === u.id ? "..." : "Approve"}
                       </button>
                       <button onClick={() => handleReject(u.id, u.fullName)}
                         disabled={actionId === u.id}
-                        className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-semibold text-sm hover:bg-red-100 disabled:opacity-50">
-                        {actionId === u.id ? "..." : "❌ Reject"}
+                        className="btn btn-outline-danger btn-sm">
+                        {actionId === u.id ? "..." : "Reject"}
                       </button>
                     </div>
                   </div>
@@ -219,70 +230,73 @@ function AdminUserManagement() {
           <>
             <input type="text" placeholder="Search by name or email…"
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full mb-4 border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-400 bg-white shadow-sm text-sm" />
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px] text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+              className="form-control mb-3" />
+            <div className="card border shadow-sm rounded-4 overflow-hidden">
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="table-light">
                     <tr>
                       {["#","Name","Email","Mobile","Role","Status","Last Login","Actions"].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                        <th key={h} className="small text-uppercase text-secondary">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody>
                     {loading ? (
-                      <tr><td colSpan="8" className="text-center py-12 text-gray-400">Loading…</td></tr>
+                      <tr><td colSpan="8" className="text-center py-5 text-secondary">Loading…</td></tr>
                     ) : filtered.length === 0 ? (
-                      <tr><td colSpan="8" className="text-center py-12 text-gray-400">No users found</td></tr>
+                      <tr><td colSpan="8" className="text-center py-5 text-secondary">No users found</td></tr>
                     ) : filtered.map((u, i) => (
-                      <tr key={u.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                        <td className="px-4 py-3 font-semibold text-gray-800">{u.fullName}</td>
-                        <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                        <td className="px-4 py-3 text-gray-500">{u.mobileNumber || "—"}</td>
-                        <td className="px-4 py-3">
+                      <tr key={u.id}>
+                        <td className="text-secondary">{i + 1}</td>
+                        <td className="fw-semibold">{u.fullName}</td>
+                        <td className="text-secondary">{u.email}</td>
+                        <td className="text-secondary">{u.mobileNumber || "—"}</td>
+                        <td>
                           <select value={u.role} disabled={actionId === u.id}
                             onChange={e => handleRole(u.id, e.target.value)}
-                            className={`text-xs font-bold px-2 py-1 rounded-lg border-0 outline-none cursor-pointer ${ROLE_COLORS[u.role]}`}>
+                            className="form-select form-select-sm" style={{ width: "auto" }}>
                             <option value="USER">USER</option>
                             <option value="ORGANIZER">ORGANIZER</option>
                             <option value="ADMIN">ADMIN</option>
                           </select>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLORS[u.status] || "bg-gray-100 text-gray-600"}`}>
+                        <td>
+                          <span className={`badge rounded-pill small fw-bold ${STATUS_COLORS[u.status] || "bg-secondary-subtle text-secondary-emphasis"}`}>
                             {u.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-400 text-xs">
+                        <td className="text-secondary small">
                           {u.lastLogin ? new Date(u.lastLogin).toLocaleDateString("en-IN") : "Never"}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
+                        <td>
+                          <div className="d-flex gap-2">
                             {u.status === "PENDING_APPROVAL" ? (
                               <button onClick={() => handleApprove(u.id, u.fullName)}
-                                disabled={actionId === u.id}
-                                className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">
+                                disabled={actionId === u.id || !canApprove(u)}
+                                title={!canApprove(u) ? "View the verification document first" : undefined}
+                                className="btn btn-dark btn-sm">
                                 Approve
                               </button>
                             ) : u.status === "ACTIVE" ? (
                               <button onClick={() => handleStatus(u.id, "LOCKED")}
                                 disabled={actionId === u.id}
-                                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg font-semibold hover:bg-red-100 disabled:opacity-50">
+                                className="btn btn-outline-danger btn-sm">
                                 Deactivate
                               </button>
                             ) : (
                               <button onClick={() => handleStatus(u.id, "ACTIVE")}
                                 disabled={actionId === u.id}
-                                className="text-xs px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg font-semibold hover:bg-green-100 disabled:opacity-50">
+                                className="btn btn-outline-success btn-sm">
                                 Activate
                               </button>
                             )}
-                            <button onClick={() => setConfirmDelete(u)}
-                              className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
-                              Delete
-                            </button>
+                            {u.hasDocument && (
+                              <button onClick={() => handleViewDocument(u.id)} disabled={docLoadingId === u.id}
+                                className="btn btn-outline-primary btn-sm">
+                                {docLoadingId === u.id ? "..." : "Document"}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

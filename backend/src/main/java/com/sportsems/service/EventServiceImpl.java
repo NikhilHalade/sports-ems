@@ -2,8 +2,11 @@ package com.sportsems.service;
 
 import com.sportsems.dto.EventRequestDTO;
 import com.sportsems.dto.EventResponseDTO;
+import com.sportsems.entity.Booking;
 import com.sportsems.entity.Event;
 import com.sportsems.entity.Event.EventStatus;
+import com.sportsems.repository.BookingRepository;
+import com.sportsems.repository.EventCategoryRepository;
 import com.sportsems.repository.EventRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,14 +18,20 @@ import java.util.stream.Collectors;
 public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
+    private final BookingRepository bookingRepository;
+    private final EventCategoryRepository categoryRepository;
 
-    public EventServiceImpl(EventRepository eventRepository) {
+    public EventServiceImpl(EventRepository eventRepository, BookingRepository bookingRepository,
+                             EventCategoryRepository categoryRepository) {
         this.eventRepository = eventRepository;
+        this.bookingRepository = bookingRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override @Transactional
     public EventResponseDTO createEvent(EventRequestDTO dto, String organizerEmail) {
         validateTimes(dto);
+        validateCategory(dto);
         Event event = mapToEntity(dto, new Event());
         event.setCreatedBy(organizerEmail);  // Feature 2: track owner
         return mapToDTO(eventRepository.save(event));
@@ -49,6 +58,7 @@ public class EventServiceImpl implements EventService {
     public EventResponseDTO updateEvent(Long id, EventRequestDTO dto,
                                          String organizerEmail, boolean isAdmin) {
         validateTimes(dto);
+        validateCategory(dto);
         Event event = findOrThrow(id);
         // Feature 2: only owner or admin can update
         if (!isAdmin && !organizerEmail.equals(event.getCreatedBy())) {
@@ -72,6 +82,20 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
     }
 
+    // Feature: the category/type must be one of the menu-driven options
+    // (organizers can add a new one via /api/categories before selecting it,
+    // but they cannot free-type an arbitrary value into the event itself).
+    private void validateCategory(EventRequestDTO dto) {
+        String category = dto.getCategory();
+        if (category == null || category.trim().isEmpty()) {
+            throw new RuntimeException("Event category/type is required");
+        }
+        if (!categoryRepository.existsByNameIgnoreCase(category.trim())) {
+            throw new RuntimeException(
+                    "Unknown event category '" + category + "'. Please pick from the list or add it first.");
+        }
+    }
+
     private void validateTimes(EventRequestDTO dto) {
         if (dto.getStartTime() != null && dto.getEndTime() != null
                 && !dto.getEndTime().isAfter(dto.getStartTime())) {
@@ -83,6 +107,7 @@ public class EventServiceImpl implements EventService {
         event.setEventName(dto.getEventName());
         event.setDescription(dto.getDescription());
         event.setVenue(dto.getVenue());
+        event.setCategory(dto.getCategory() != null ? dto.getCategory().trim() : null);
         event.setEventDate(dto.getEventDate());
         event.setStartTime(dto.getStartTime());
         event.setEndTime(dto.getEndTime());
@@ -102,6 +127,7 @@ public class EventServiceImpl implements EventService {
         dto.setEventName(e.getEventName());
         dto.setDescription(e.getDescription());
         dto.setVenue(e.getVenue());
+        dto.setCategory(e.getCategory());
         dto.setEventDate(e.getEventDate());
         dto.setStartTime(e.getStartTime());
         dto.setEndTime(e.getEndTime());
@@ -111,6 +137,9 @@ public class EventServiceImpl implements EventService {
         dto.setStatus(e.getStatus());
         dto.setCreatedAt(e.getCreatedAt());
         dto.setUpdatedAt(e.getUpdatedAt());
+        // Feature 3: registration count for the organizer dashboard
+        dto.setRegisteredCount(
+                bookingRepository.countByEvent_EventIdAndStatus(e.getEventId(), Booking.BookingStatus.CONFIRMED));
         return dto;
     }
 }

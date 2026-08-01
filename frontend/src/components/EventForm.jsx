@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { getRole } from '../utils/auth'
+import eventService from '../services/eventService'
 
 const EMPTY_EVENT = {
   eventName: '',
   description: '',
   venue: '',
+  category: '',
   eventDate: '',
   startTime: '',
   endTime: '',
@@ -28,6 +31,10 @@ function validate(values) {
     errors.venue = 'Venue is required.'
   } else if (values.venue.length > 200) {
     errors.venue = 'Venue must not exceed 200 characters.'
+  }
+
+  if (!values.category || !values.category.trim()) {
+    errors.category = 'Please select an event type.'
   }
 
   if (!values.eventDate) {
@@ -71,6 +78,57 @@ function EventForm({
   const [values, setValues] = useState({ ...EMPTY_EVENT, ...initialValues })
   const [errors, setErrors] = useState({})
 
+  // Menu-driven event type / category (Sports, Cultural Fest, Family Function,
+  // Comedy, Concert, Get Together, ...). Organizers/admins may add a new
+  // option to the menu; regular users never see this form so they can only
+  // ever pick from the existing list.
+  const role = (getRole() || '').trim().toUpperCase()
+  const canAddCategory = role === 'ORGANIZER' || role === 'ADMIN'
+  const [categories, setCategories] = useState([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [addCategoryError, setAddCategoryError] = useState('')
+  const [addingCategory, setAddingCategory] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    async function loadCategories() {
+      try {
+        const data = await eventService.getCategories()
+        if (isMounted) setCategories(data)
+      } catch {
+        // Non-fatal — the select just falls back to an empty menu.
+      } finally {
+        if (isMounted) setCategoriesLoading(false)
+      }
+    }
+    loadCategories()
+    return () => { isMounted = false }
+  }, [])
+
+  async function handleAddCategory() {
+    const name = newCategoryName.trim()
+    if (!name) {
+      setAddCategoryError('Enter a category name.')
+      return
+    }
+    setAddingCategory(true)
+    setAddCategoryError('')
+    try {
+      const created = await eventService.createCategory(name)
+      setCategories((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
+      setValues((prev) => ({ ...prev, category: created.name }))
+      if (errors.category) setErrors((prev) => ({ ...prev, category: undefined }))
+      setNewCategoryName('')
+      setShowAddCategory(false)
+    } catch (err) {
+      setAddCategoryError(err.message)
+    } finally {
+      setAddingCategory(false)
+    }
+  }
+
   function handleChange(e) {
     const { name, value } = e.target
     setValues((prev) => ({ ...prev, [name]: value }))
@@ -91,6 +149,7 @@ function EventForm({
       eventName: values.eventName.trim(),
       description: values.description.trim() || null,
       venue: values.venue.trim(),
+      category: values.category,
       eventDate: values.eventDate,
       startTime: values.startTime || null,
       endTime: values.endTime || null,
@@ -103,33 +162,34 @@ function EventForm({
   }
 
   return (
-    <form className="card" onSubmit={handleSubmit} noValidate>
-      <div className="form-grid">
-        <div className="form-field form-field--full">
-          <label className="form-label" htmlFor="eventName">
-            Event Name<span className="required">*</span>
+    <form className="card border shadow-sm rounded-4 p-4" onSubmit={handleSubmit} noValidate>
+      <div className="row g-3">
+        <div className="col-12">
+          <label className="form-label fw-semibold" htmlFor="eventName">
+            Event Name<span className="text-danger ms-1">*</span>
           </label>
           <input
             id="eventName"
             name="eventName"
             type="text"
-            className={`form-input ${errors.eventName ? 'form-input--error' : ''}`}
+            className={`form-control ${errors.eventName ? 'is-invalid' : ''}`}
             value={values.eventName}
             onChange={handleChange}
             placeholder="e.g. City Marathon 2026"
             maxLength={150}
           />
-          {errors.eventName && <span className="form-error-text">{errors.eventName}</span>}
+          {errors.eventName && <div className="invalid-feedback d-block">{errors.eventName}</div>}
         </div>
 
-        <div className="form-field form-field--full">
-          <label className="form-label" htmlFor="description">
+        <div className="col-12">
+          <label className="form-label fw-semibold" htmlFor="description">
             Description
           </label>
           <textarea
             id="description"
             name="description"
-            className="form-textarea"
+            className="form-control"
+            rows={3}
             value={values.description}
             onChange={handleChange}
             placeholder="Brief details about the event…"
@@ -137,41 +197,101 @@ function EventForm({
           />
         </div>
 
-        <div className="form-field form-field--full">
-          <label className="form-label" htmlFor="venue">
-            Venue<span className="required">*</span>
+        <div className="col-12">
+          <label className="form-label fw-semibold" htmlFor="venue">
+            Venue<span className="text-danger ms-1">*</span>
           </label>
           <input
             id="venue"
             name="venue"
             type="text"
-            className={`form-input ${errors.venue ? 'form-input--error' : ''}`}
+            className={`form-control ${errors.venue ? 'is-invalid' : ''}`}
             value={values.venue}
             onChange={handleChange}
             placeholder="e.g. MG Road, Bengaluru"
             maxLength={200}
           />
-          {errors.venue && <span className="form-error-text">{errors.venue}</span>}
+          {errors.venue && <div className="invalid-feedback d-block">{errors.venue}</div>}
         </div>
 
-        <div className="form-field">
-          <label className="form-label" htmlFor="eventDate">
-            Event Date<span className="required">*</span>
+        <div className="col-12">
+          <label className="form-label fw-semibold" htmlFor="category">
+            Event Type<span className="text-danger ms-1">*</span>
+          </label>
+          <select
+            id="category"
+            name="category"
+            className={`form-select ${errors.category ? 'is-invalid' : ''}`}
+            value={values.category}
+            onChange={(e) => {
+              if (e.target.value === '__add_new__') {
+                setShowAddCategory(true)
+                return
+              }
+              handleChange(e)
+            }}
+            disabled={categoriesLoading}
+          >
+            <option value="" disabled>
+              {categoriesLoading ? 'Loading event types…' : 'Select an event type'}
+            </option>
+            {categories.map((c) => (
+              <option key={c.categoryId} value={c.name}>{c.name}</option>
+            ))}
+            {canAddCategory && <option value="__add_new__">+ Add new event type…</option>}
+          </select>
+          {errors.category && <div className="invalid-feedback d-block">{errors.category}</div>}
+
+          {canAddCategory && showAddCategory && (
+            <div className="d-flex gap-2 align-items-start mt-2">
+              <div className="flex-grow-1">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Wedding, Workshop, Exhibition"
+                  value={newCategoryName}
+                  maxLength={100}
+                  onChange={(e) => { setNewCategoryName(e.target.value); if (addCategoryError) setAddCategoryError('') }}
+                />
+                {addCategoryError && <div className="invalid-feedback d-block">{addCategoryError}</div>}
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={addingCategory}
+                onClick={handleAddCategory}
+              >
+                {addingCategory ? 'Adding…' : 'Add'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setAddCategoryError('') }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="col-md-6">
+          <label className="form-label fw-semibold" htmlFor="eventDate">
+            Event Date<span className="text-danger ms-1">*</span>
           </label>
           <input
             id="eventDate"
             name="eventDate"
             type="date"
-            className={`form-input ${errors.eventDate ? 'form-input--error' : ''}`}
+            className={`form-control ${errors.eventDate ? 'is-invalid' : ''}`}
             value={values.eventDate}
             onChange={handleChange}
           />
-          {errors.eventDate && <span className="form-error-text">{errors.eventDate}</span>}
+          {errors.eventDate && <div className="invalid-feedback d-block">{errors.eventDate}</div>}
         </div>
 
         {showStatusField && (
-          <div className="form-field">
-            <label className="form-label" htmlFor="status">
+          <div className="col-md-6">
+            <label className="form-label fw-semibold" htmlFor="status">
               Status
             </label>
             <select
@@ -188,37 +308,37 @@ function EventForm({
           </div>
         )}
 
-        <div className="form-field">
-          <label className="form-label" htmlFor="startTime">
+        <div className="col-md-6">
+          <label className="form-label fw-semibold" htmlFor="startTime">
             Start Time
           </label>
           <input
             id="startTime"
             name="startTime"
             type="time"
-            className="form-input"
+            className="form-control"
             value={values.startTime}
             onChange={handleChange}
           />
         </div>
 
-        <div className="form-field">
-          <label className="form-label" htmlFor="endTime">
+        <div className="col-md-6">
+          <label className="form-label fw-semibold" htmlFor="endTime">
             End Time
           </label>
           <input
             id="endTime"
             name="endTime"
             type="time"
-            className={`form-input ${errors.endTime ? 'form-input--error' : ''}`}
+            className={`form-control ${errors.endTime ? 'is-invalid' : ''}`}
             value={values.endTime}
             onChange={handleChange}
           />
-          {errors.endTime && <span className="form-error-text">{errors.endTime}</span>}
+          {errors.endTime && <div className="invalid-feedback d-block">{errors.endTime}</div>}
         </div>
 
-        <div className="form-field">
-          <label className="form-label" htmlFor="maxParticipants">
+        <div className="col-md-6">
+          <label className="form-label fw-semibold" htmlFor="maxParticipants">
             Maximum Participants
           </label>
           <input
@@ -226,18 +346,18 @@ function EventForm({
             name="maxParticipants"
             type="number"
             min="1"
-            className={`form-input ${errors.maxParticipants ? 'form-input--error' : ''}`}
+            className={`form-control ${errors.maxParticipants ? 'is-invalid' : ''}`}
             value={values.maxParticipants}
             onChange={handleChange}
             placeholder="e.g. 100"
           />
           {errors.maxParticipants && (
-            <span className="form-error-text">{errors.maxParticipants}</span>
+            <div className="invalid-feedback d-block">{errors.maxParticipants}</div>
           )}
         </div>
 
-        <div className="form-field">
-          <label className="form-label" htmlFor="registrationFee">
+        <div className="col-md-6">
+          <label className="form-label fw-semibold" htmlFor="registrationFee">
             Registration Fee (₹)
           </label>
           <input
@@ -246,25 +366,25 @@ function EventForm({
             type="number"
             min="0"
             step="0.01"
-            className={`form-input ${errors.registrationFee ? 'form-input--error' : ''}`}
+            className={`form-control ${errors.registrationFee ? 'is-invalid' : ''}`}
             value={values.registrationFee}
             onChange={handleChange}
             placeholder="e.g. 500.00"
           />
           {errors.registrationFee && (
-            <span className="form-error-text">{errors.registrationFee}</span>
+            <div className="invalid-feedback d-block">{errors.registrationFee}</div>
           )}
         </div>
       </div>
 
-      <div className="form-actions">
-        <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
+      <div className="d-flex gap-2 mt-4 pt-4 border-top">
+        <button type="submit" className="btn btn-dark" disabled={isSubmitting}>
           {isSubmitting ? 'Saving…' : submitLabel}
         </button>
         {onCancel && (
           <button
             type="button"
-            className="btn btn--secondary"
+            className="btn btn-outline-secondary"
             onClick={onCancel}
             disabled={isSubmitting}
           >

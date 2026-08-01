@@ -3,8 +3,10 @@ package com.sportsems.controller;
 import com.sportsems.dto.*;
 import com.sportsems.service.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -18,10 +20,26 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    // Feature 6: registration is multipart so ORGANIZER/ADMIN can attach a
+    // PDF verification document alongside the regular fields. USER
+    // registrations simply omit the "document" part.
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> register(
+            @RequestParam("name") String name,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("phone") String phone,
+            @RequestParam("role") String role,
+            @RequestParam(value = "document", required = false) MultipartFile document) {
         try {
-            String result = authService.registerUser(request);
+            RegisterRequest request = new RegisterRequest();
+            request.setName(name);
+            request.setEmail(email);
+            request.setPassword(password);
+            request.setPhone(phone);
+            request.setRole(role);
+
+            String result = authService.registerUser(request, document);
             if ("PENDING_APPROVAL".equals(result)) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                         .body(Map.of("message",
@@ -41,6 +59,15 @@ public class AuthController {
             if ("WEAK_PASSWORD".equals(e.getMessage()))
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Password must be 8+ chars, 1 uppercase, 1 number.", "field", "password"));
+            if ("DOCUMENT_REQUIRED".equals(e.getMessage()))
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Please upload a PDF verification document.", "field", "document"));
+            if ("INVALID_DOCUMENT_TYPE".equals(e.getMessage()))
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Verification document must be a PDF file.", "field", "document"));
+            if ("DOCUMENT_UPLOAD_FAILED".equals(e.getMessage()))
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Could not upload document. Please try again.", "field", "document"));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Something went wrong."));
         }

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Public pages
@@ -22,12 +23,18 @@ import EditEvent from "./pages/EditEvent";
 // ADMIN — user management (FR-6.1) + reports (FR-6.2)
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminReports from "./pages/AdminReports";
+import AdminVenueDetails from "./pages/AdminVenueDetails";
+
+// Complaints — admin view of every complaint raised by users/organizers
+import AdminComplaints from "./pages/AdminComplaints";
 
 function App() {
   return (
     <BrowserRouter>
-      <Navbar />
-      <Routes>
+      <div className="min-vh-100 d-flex flex-column">
+        <Navbar />
+        <div className="flex-grow-1">
+          <Routes>
         {/* Public */}
         <Route path="/"                 element={<Home />} />
         <Route path="/login"            element={<Login />} />
@@ -67,8 +74,21 @@ function App() {
           <ProtectedRoute><AdminReports /></ProtectedRoute>
         } />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        {/* ADMIN — venue-wise events, organizer & user details */}
+        <Route path="/admin/venues" element={
+          <ProtectedRoute><AdminVenueDetails /></ProtectedRoute>
+        } />
+
+        {/* ADMIN — complaints raised by users & organizers */}
+        <Route path="/admin/complaints" element={
+          <ProtectedRoute><AdminComplaints /></ProtectedRoute>
+        } />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }

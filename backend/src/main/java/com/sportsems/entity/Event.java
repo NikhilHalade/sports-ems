@@ -28,6 +28,11 @@ public class Event {
     @Column(name = "venue", nullable = false, length = 200)
     private String venue;
 
+    // Feature: menu-driven event type (Sports, Cultural Fest, Family Function,
+    // Comedy, Concert, Get Together, or any category an organizer/admin adds).
+    @Column(name = "category", length = 100)
+    private String category;
+
     @Column(name = "event_date", nullable = false)
     private LocalDate eventDate;
 
@@ -82,6 +87,8 @@ public class Event {
     public void setDescription(String description) { this.description = description; }
     public String getVenue() { return venue; }
     public void setVenue(String venue) { this.venue = venue; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     public LocalDate getEventDate() { return eventDate; }
     public void setEventDate(LocalDate eventDate) { this.eventDate = eventDate; }
     public LocalTime getStartTime() { return startTime; }

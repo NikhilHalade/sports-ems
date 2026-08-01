@@ -48,6 +48,10 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         if (user.getStatus() != User.Status.PENDING_APPROVAL)
             throw new RuntimeException("USER_NOT_PENDING");
+        // Feature: if the organizer/admin uploaded a verification document,
+        // the admin must have opened it at least once before approving.
+        if (user.getDocumentPath() != null && user.getDocumentViewedAt() == null)
+            throw new RuntimeException("Please view the verification document before approving this user.");
         user.setStatus(User.Status.ACTIVE);
         userRepo.save(user);
         // Feature 1: email notification
@@ -89,9 +93,38 @@ public class AdminService {
         return mapUser(user);
     }
 
-    @Transactional
-    public void deleteUser(Long userId) {
-        userRepo.findById(userId).ifPresent(userRepo::delete);
+    // Feature 5: user deletion has been removed — accounts can only be
+    // deactivated (LOCKED) or rejected while still PENDING_APPROVAL.
+
+    // Feature 6: admin downloads the PDF a organizer/admin uploaded at
+    // registration, to validate it before approving the account.
+    public DocumentFile getUserDocument(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
+        if (user.getDocumentPath() == null)
+            throw new RuntimeException("DOCUMENT_NOT_FOUND");
+        try {
+            byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(user.getDocumentPath()));
+            String name = user.getDocumentOriginalName() != null ? user.getDocumentOriginalName() : "document.pdf";
+            // Feature: record that an admin has opened this document, which
+            // unlocks approval for this account.
+            if (user.getDocumentViewedAt() == null) {
+                user.setDocumentViewedAt(java.time.LocalDateTime.now());
+                userRepo.save(user);
+            }
+            return new DocumentFile(bytes, name);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("DOCUMENT_NOT_FOUND");
+        }
+    }
+
+    public static class DocumentFile {
+        public final byte[] bytes;
+        public final String filename;
+        public DocumentFile(byte[] bytes, String filename) {
+            this.bytes = bytes;
+            this.filename = filename;
+        }
     }
 
     public Map<String, Object> generateReport() {
@@ -132,6 +165,52 @@ public class AdminService {
             d.put("registrationFee", e.getRegistrationFee());
             return d;
         }).collect(Collectors.toList()));
+
+        // Feature: venue-wise breakdown — per venue, how many events, how many
+        // distinct organizers run events there, and how many users booked each event.
+        Map<Long, Long> confirmedCountByEvent = bookings.stream()
+                .filter(b -> b.getStatus() == Booking.BookingStatus.CONFIRMED)
+                .collect(Collectors.groupingBy(b -> b.getEvent().getEventId(), Collectors.counting()));
+
+        Map<String, List<Event>> eventsByVenue = events.stream()
+                .collect(Collectors.groupingBy(Event::getVenue, LinkedHashMap::new, Collectors.toList()));
+
+        List<Map<String, Object>> venueDetails = eventsByVenue.entrySet().stream().map(entry -> {
+            String venue = entry.getKey();
+            List<Event> venueEvents = entry.getValue();
+
+            long organizerCount = venueEvents.stream()
+                    .map(Event::getCreatedBy)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .count();
+
+            List<Map<String, Object>> venueEventList = venueEvents.stream().map(e -> {
+                Map<String, Object> ed = new LinkedHashMap<>();
+                ed.put("eventId", e.getEventId());
+                ed.put("eventName", e.getEventName());
+                ed.put("category", e.getCategory());
+                ed.put("createdBy", e.getCreatedBy());
+                ed.put("eventDate", e.getEventDate() != null ? e.getEventDate().toString() : "");
+                ed.put("status", e.getStatus().name());
+                ed.put("userCount", confirmedCountByEvent.getOrDefault(e.getEventId(), 0L));
+                return ed;
+            }).collect(Collectors.toList());
+
+            long totalUsers = venueEventList.stream().mapToLong(m -> (Long) m.get("userCount")).sum();
+
+            Map<String, Object> vd = new LinkedHashMap<>();
+            vd.put("venue", venue);
+            vd.put("eventCount", venueEvents.size());
+            vd.put("organizerCount", organizerCount);
+            vd.put("totalUsers", totalUsers);
+            vd.put("events", venueEventList);
+            return vd;
+        })
+        .sorted((a, b) -> ((String) a.get("venue")).compareToIgnoreCase((String) b.get("venue")))
+        .collect(Collectors.toList());
+
+        report.put("venueDetails", venueDetails);
         return report;
     }
 
@@ -146,6 +225,9 @@ public class AdminService {
         dto.setFailedAttempts(u.getFailedAttempts());
         dto.setLastLogin(u.getLastLogin());
         dto.setCreatedAt(u.getCreatedAt());
+        dto.setHasDocument(u.getDocumentPath() != null);
+        dto.setDocumentOriginalName(u.getDocumentOriginalName());
+        dto.setDocumentViewed(u.getDocumentViewedAt() != null);
         return dto;
     }
 }

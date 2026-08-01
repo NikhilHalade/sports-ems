@@ -1,231 +1,130 @@
+const team = [
+  { name: "Divyansh Verma", role: "Project Engineer (Project Mentor)" },
+  { name: "Swatantra Singh", role: "Project Lead/Backend Developer" },
+  { name: "Nikhil Halade", role: "Backend Developer" },
+  { name: "Shailendra Singh", role: "FrontEnd Developer" },
+  { name: "Omkar Savant", role: "FrontEnd Developer" },
+  { name: "Tushar Bargah", role: "Database" },
+];
+
 function AboutUs() {
   return (
-    <div className="bg-gray-50">
+    <div className="bg-white">
 
       {/* HERO */}
-      <section className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-24">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-
-          <h1 className="text-6xl font-bold mb-6">
-            About EventSphere
-          </h1>
-
-          <p className="text-xl text-gray-200 max-w-3xl mx-auto">
-            Connecting people through unforgettable events,
-            experiences and communities.
+      <section className="py-5 border-bottom">
+        <div className="container py-5 text-center">
+          <h1 className="display-4 fw-bold mb-3">About EventSphere</h1>
+          <p className="fs-5 text-secondary mx-auto" style={{ maxWidth: "40rem" }}>
+            Connecting people through unforgettable events, experiences and communities.
           </p>
-
         </div>
       </section>
 
       {/* WHO WE ARE */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-
-          <img
-            src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200"
-            alt="About"
-            className="rounded-3xl shadow-xl"
-          />
-
-          <div>
-
-            <h2 className="text-4xl font-bold mb-6">
-              Who We Are
-            </h2>
-
-            <p className="text-gray-600 text-lg leading-relaxed">
-              EventSphere is a modern event management platform
-              designed to help people discover, organize and
-              participate in exciting events.
-            </p>
-
-            <p className="text-gray-600 text-lg leading-relaxed mt-4">
-              From conferences and workshops to festivals and
-              community gatherings, we make every event
-              accessible and memorable.
-            </p>
-
+      <section className="py-5">
+        <div className="container py-4">
+          <div className="row g-5 align-items-center">
+            <div className="col-lg-6">
+              <img
+                src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200"
+                alt="About"
+                className="img-fluid rounded-4 shadow-sm w-100"
+              />
+            </div>
+            <div className="col-lg-6">
+              <h2 className="fw-bold mb-4">Who We Are</h2>
+              <p className="fs-5 text-secondary">
+                EventSphere is a modern event management platform
+                designed to help people discover, organize and
+                participate in exciting events.
+              </p>
+              <p className="fs-5 text-secondary mb-0">
+                From conferences and workshops to festivals and
+                community gatherings, we make every event
+                accessible and memorable.
+              </p>
+            </div>
           </div>
-
         </div>
-
       </section>
 
       {/* MISSION & VISION */}
-      <section className="bg-white py-20">
-
-        <div className="max-w-6xl mx-auto px-6">
-
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Our Mission & Vision
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-8">
-
-            <div className="bg-purple-50 p-8 rounded-3xl shadow">
-              <h3 className="text-2xl font-bold mb-4">
-                🎯 Our Mission
-              </h3>
-
-              <p className="text-gray-600">
-                To simplify event discovery and help users
-                connect with meaningful experiences.
-              </p>
+      <section className="py-5 bg-light border-top border-bottom">
+        <div className="container py-4">
+          <h2 className="fw-bold text-center mb-5">Our Mission & Vision</h2>
+          <div className="row g-4">
+            <div className="col-md-6">
+              <div className="card border shadow-sm h-100 p-4">
+                <h4 className="fw-bold mb-3">Our Mission</h4>
+                <p className="text-secondary mb-0">
+                  To simplify event discovery and help users
+                  connect with meaningful experiences.
+                </p>
+              </div>
             </div>
-
-            <div className="bg-indigo-50 p-8 rounded-3xl shadow">
-              <h3 className="text-2xl font-bold mb-4">
-                🚀 Our Vision
-              </h3>
-
-              <p className="text-gray-600">
-                To become the most trusted event platform
-                for communities worldwide.
-              </p>
+            <div className="col-md-6">
+              <div className="card border shadow-sm h-100 p-4">
+                <h4 className="fw-bold mb-3">Our Vision</h4>
+                <p className="text-secondary mb-0">
+                  To become the most trusted event platform
+                  for communities worldwide.
+                </p>
+              </div>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       {/* STATS */}
-      <section className="py-20">
-
-        <div className="max-w-6xl mx-auto px-6">
-
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-
-            <div className="bg-white p-8 rounded-3xl shadow">
-              <h2 className="text-4xl font-bold text-purple-600">
-                5000+
-              </h2>
-              <p className="mt-2 text-gray-600">Users</p>
+      <section className="py-5">
+        <div className="container py-4">
+          <div className="row g-4 text-center">
+            <div className="col-6 col-md-3">
+              <div className="card border shadow-sm h-100 p-4">
+                <h2 className="fw-bold mb-1">5000+</h2>
+                <p className="text-secondary small mb-0">Users</p>
+              </div>
             </div>
-
-            <div className="bg-white p-8 rounded-3xl shadow">
-              <h2 className="text-4xl font-bold text-purple-600">
-                1200+
-              </h2>
-              <p className="mt-2 text-gray-600">Events</p>
+            <div className="col-6 col-md-3">
+              <div className="card border shadow-sm h-100 p-4">
+                <h2 className="fw-bold mb-1">1200+</h2>
+                <p className="text-secondary small mb-0">Events</p>
+              </div>
             </div>
-
-            <div className="bg-white p-8 rounded-3xl shadow">
-              <h2 className="text-4xl font-bold text-purple-600">
-                300+
-              </h2>
-              <p className="mt-2 text-gray-600">Organizers</p>
+            <div className="col-6 col-md-3">
+              <div className="card border shadow-sm h-100 p-4">
+                <h2 className="fw-bold mb-1">300+</h2>
+                <p className="text-secondary small mb-0">Organizers</p>
+              </div>
             </div>
-
-            <div className="bg-white p-8 rounded-3xl shadow">
-              <h2 className="text-4xl font-bold text-purple-600">
-                4.9★
-              </h2>
-              <p className="mt-2 text-gray-600">Rating</p>
+            <div className="col-6 col-md-3">
+              <div className="card border shadow-sm h-100 p-4">
+                <h2 className="fw-bold mb-1">4.9</h2>
+                <p className="text-secondary small mb-0">Rating</p>
+              </div>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       {/* TEAM */}
-      <section className="bg-white py-20">
-
-        <div className="max-w-6xl mx-auto px-6">
-
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Meet Our Team
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-8">
- <div className="bg-gray-50 rounded-3xl p-8 text-center shadow">
-              <div className="w-24 h-24 bg-purple-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold">Divyansh Verma</h3>
-              <p className="text-gray-500">Project Engineer (Project Mentor)</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-3xl p-8 text-center shadow">
-              <div className="w-24 h-24 bg-purple-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold">Swatantra Singh</h3>
-              <p className="text-gray-500">Project Lead/Backend Developer</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-3xl p-8 text-center shadow">
-              <div className="w-24 h-24 bg-purple-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold">Nikhil Halade</h3>
-              <p className="text-gray-500">Backend Developer</p>
-            </div>
-<div className="bg-gray-50 rounded-3xl p-8 text-center shadow">
-              <div className="w-24 h-24 bg-purple-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold">Shailendra Singh</h3>
-              <p className="text-gray-500">FrontEnd Developer</p>
-</div>
-
-
-            <div className="bg-gray-50 rounded-3xl p-8 text-center shadow">
-              <div className="w-24 h-24 bg-purple-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold">Omkar Savant</h3>
-              <p className="text-gray-500">FrontEnd Developer</p>
-
-<div className="bg-gray-50 rounded-3xl p-8 text-center shadow">
-              <div className="w-24 h-24 bg-purple-200 rounded-full mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold">Tushar Bargah</h3>
-              <p className="text-gray-500">Database</p>
-            </div>
-
-            </div>
-
+      <section className="py-5 bg-light border-top">
+        <div className="container py-4">
+          <h2 className="fw-bold text-center mb-5">Meet Our Team</h2>
+          <div className="row g-4">
+            {team.map((member) => (
+              <div className="col-sm-6 col-md-4" key={member.name}>
+                <div className="card border shadow-sm h-100 text-center p-4">
+                  <div className="rounded-circle bg-secondary-subtle mx-auto mb-3" style={{ width: 96, height: 96 }} />
+                  <h5 className="fw-bold mb-1">{member.name}</h5>
+                  <p className="text-secondary small mb-0">{member.role}</p>
+                </div>
+              </div>
+            ))}
           </div>
-
         </div>
-
       </section>
-
-      {/* PLAYO STYLE FOOTER */}
-      <footer className="bg-gray-100 py-16">
-
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-10">
-
-          <div>
-            <h2 className="text-3xl font-bold text-purple-600">
-              EventSphere
-            </h2>
-
-            <p className="text-gray-500 mt-4">
-              © 2026 EventSphere.
-              All Rights Reserved.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-bold mb-4">Company</h3>
-            <p className="mb-2">About Us</p>
-            <p className="mb-2">Events</p>
-            <p className="mb-2">Contact</p>
-          </div>
-
-          <div>
-            <h3 className="font-bold mb-4">Social</h3>
-            <p className="mb-2">Instagram</p>
-            <p className="mb-2">Facebook</p>
-            <p className="mb-2">LinkedIn</p>
-          </div>
-
-          <div>
-            <h3 className="font-bold mb-4">Support</h3>
-            <p className="mb-2">FAQs</p>
-            <p className="mb-2">Privacy Policy</p>
-            <p className="mb-2">Terms & Conditions</p>
-          </div>
-
-        </div>
-
-      </footer>
 
     </div>
   );

@@ -31,6 +31,16 @@ public class BookingService {
     }
 
     public BookingResponseDTO bookSeat(Long eventId, String userEmail) {
+        return bookSeat(eventId, userEmail, 1);
+    }
+
+    // Feature: multiple tickets per booking. numberOfTickets is the number of
+    // seats the user wants for this event; the total price is
+    // registrationFee * numberOfTickets.
+    public BookingResponseDTO bookSeat(Long eventId, String userEmail, Integer numberOfTicketsRequested) {
+        int numberOfTickets = (numberOfTicketsRequested == null || numberOfTicketsRequested < 1)
+                ? 1 : numberOfTicketsRequested;
+
         Event event = eventRepo.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("EVENT_NOT_FOUND"));
 
@@ -46,10 +56,17 @@ public class BookingService {
         if (event.getAvailableSeats() != null && event.getAvailableSeats() <= 0)
             throw new RuntimeException("NO_SEATS_AVAILABLE");
 
+        if (event.getAvailableSeats() != null && numberOfTickets > event.getAvailableSeats())
+            throw new RuntimeException("NOT_ENOUGH_SEATS");
+
         if (event.getAvailableSeats() != null) {
-            event.setAvailableSeats(event.getAvailableSeats() - 1);
+            event.setAvailableSeats(event.getAvailableSeats() - numberOfTickets);
             eventRepo.save(event);
         }
+
+        java.math.BigDecimal fee = event.getRegistrationFee() != null
+                ? event.getRegistrationFee() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal totalAmount = fee.multiply(java.math.BigDecimal.valueOf(numberOfTickets));
 
         Booking booking = bookingRepo
                 .findByEvent_EventIdAndUserEmail(eventId, userEmail)
@@ -58,6 +75,8 @@ public class BookingService {
         booking.setUserEmail(userEmail);
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
         booking.setCancelledAt(null);
+        booking.setNumberOfTickets(numberOfTickets);
+        booking.setTotalAmount(totalAmount);
         if (booking.getBookedAt() == null) booking.setBookedAt(LocalDateTime.now());
 
         Booking saved = bookingRepo.save(booking);
@@ -65,10 +84,20 @@ public class BookingService {
         // Feature 1: send confirmation email
         String userName = userRepo.findByEmail(userEmail)
                 .map(u -> u.getFullName()).orElse(userEmail);
+
+        // Feature 4: include the organizer's contact details in the email
+        // so the attendee has someone to reach out to about the event.
+        var organizer = event.getCreatedBy() != null
+                ? userRepo.findByEmail(event.getCreatedBy()).orElse(null) : null;
+
         emailService.sendBookingConfirmationEmail(
                 userEmail, userName, event.getEventName(), event.getVenue(),
                 event.getEventDate() != null ? event.getEventDate().toString() : "TBA",
-                saved.getId()
+                saved.getId(),
+                organizer != null ? organizer.getFullName()     : null,
+                organizer != null ? organizer.getEmail()        : event.getCreatedBy(),
+                organizer != null ? organizer.getMobileNumber() : null,
+                numberOfTickets, totalAmount
         );
 
         return mapToDTO(saved);
@@ -86,8 +115,9 @@ public class BookingService {
         booking.setCancelledAt(LocalDateTime.now());
 
         Event event = booking.getEvent();
+        int ticketsToRelease = booking.getNumberOfTickets() != null ? booking.getNumberOfTickets() : 1;
         if (event.getAvailableSeats() != null && event.getMaxParticipants() != null) {
-            event.setAvailableSeats(Math.min(event.getAvailableSeats() + 1, event.getMaxParticipants()));
+            event.setAvailableSeats(Math.min(event.getAvailableSeats() + ticketsToRelease, event.getMaxParticipants()));
             eventRepo.save(event);
         }
 
@@ -109,8 +139,15 @@ public class BookingService {
                 .stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
+    // Feature 3: organizer dashboard — list of registrants for one of THEIR
+    // events. Only the event's owner (or an admin) may view this.
     @Transactional(readOnly = true)
-    public List<BookingResponseDTO> getBookingsForEvent(Long eventId) {
+    public List<BookingResponseDTO> getBookingsForEventAsOwner(Long eventId, String requesterEmail, boolean isAdmin) {
+        Event event = eventRepo.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("EVENT_NOT_FOUND"));
+        if (!isAdmin && !requesterEmail.equals(event.getCreatedBy())) {
+            throw new RuntimeException("FORBIDDEN: You can only view registrations for your own events");
+        }
         return bookingRepo.findByEvent_EventId(eventId)
                 .stream().map(this::mapToDTO).collect(Collectors.toList());
     }
@@ -124,6 +161,25 @@ public class BookingService {
         dto.setEventDate(b.getEvent().getEventDate() != null
                 ? b.getEvent().getEventDate().toString() : null);
         dto.setUserEmail(b.getUserEmail());
+        dto.setUserName(userRepo.findByEmail(b.getUserEmail())
+                .map(u -> u.getFullName()).orElse(b.getUserEmail()));
+
+        // Feature 4: attach the event organizer's contact details to every
+        // booking so the frontend can show/download them alongside the booking.
+        String organizerEmail = b.getEvent().getCreatedBy();
+        userRepo.findByEmail(organizerEmail).ifPresentOrElse(organizer -> {
+            dto.setOrganizerName(organizer.getFullName());
+            dto.setOrganizerEmail(organizer.getEmail());
+            dto.setOrganizerPhone(organizer.getMobileNumber());
+        }, () -> dto.setOrganizerEmail(organizerEmail));
+
+        dto.setNumberOfTickets(b.getNumberOfTickets() != null ? b.getNumberOfTickets() : 1);
+        dto.setRegistrationFee(b.getEvent().getRegistrationFee());
+        dto.setTotalAmount(b.getTotalAmount() != null ? b.getTotalAmount()
+                : (b.getEvent().getRegistrationFee() != null
+                        ? b.getEvent().getRegistrationFee().multiply(
+                                java.math.BigDecimal.valueOf(b.getNumberOfTickets() != null ? b.getNumberOfTickets() : 1))
+                        : null));
         dto.setStatus(b.getStatus());
         dto.setBookedAt(b.getBookedAt());
         dto.setCancelledAt(b.getCancelledAt());

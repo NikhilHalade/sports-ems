@@ -1,12 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { isLoggedIn, getRole, getUserName, clearAuth } from "../utils/auth";
-
-const linkStyle = {
-  color: "var(--color-text)",
-  textDecoration: "none",
-  fontWeight: 600,
-  fontSize: "0.92rem",
-};
+import ThemeToggle from "./ThemeToggle";
 
 // A little warmth for the returning visitor, based on time of day.
 function greeting() {
@@ -17,24 +11,24 @@ function greeting() {
 }
 
 function Navbar() {
-  const navigate  = useNavigate();
-  const loggedIn  = isLoggedIn();
-  const role      = getRole();
-  const userName  = getUserName();
+  const navigate = useNavigate();
+  const loggedIn = isLoggedIn();
+  const role = (getRole() || "").trim().toUpperCase();
+  const userName = getUserName();
 
-  // Bug fix: a logged-in user clicking "Events" must land on their own
-  // /user/events page, not the public /events page.
+  // Bug fix: every logged-in role clicking "Events" lands on the shared
+  // /user/events browsing page. Organizers manage their own events
+  // separately via the "Dashboard" link (/events/manage) below.
   let eventsPath = "/events";
   if (loggedIn) {
-    if      (role === "USER")      eventsPath = "/user/events";
-    else if (role === "ORGANIZER") eventsPath = "/events/manage";
+    if (role === "USER" || role === "ORGANIZER") eventsPath = "/user/events";
     // ADMIN falls back to the public /events page
   }
 
   // Dashboard destination differs per role — every logged-in role gets one.
   let dashboardPath = "/user/dashboard";
-  if      (role === "ORGANIZER") dashboardPath = "/events/manage";
-  else if (role === "ADMIN")     dashboardPath = "/admin/users";
+  if (role === "ORGANIZER") dashboardPath = "/events/manage";
+  else if (role === "ADMIN") dashboardPath = "/admin/users";
 
   function handleLogout() {
     clearAuth();
@@ -44,58 +38,43 @@ function Navbar() {
   const initial = userName ? userName.trim().charAt(0).toUpperCase() : "?";
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "1.5rem",
-        padding: "0.85rem 1.5rem",
-        background: "var(--color-surface)",
-        borderBottom: "1px solid var(--color-border)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
-        <Link to="/" style={linkStyle}>Home</Link>
-        <Link to="/about" style={linkStyle}>About Us</Link>
-        <Link to={eventsPath} style={linkStyle}>Events</Link>
+    <nav className="navbar navbar-expand-md bg-white border-bottom px-3 px-md-4 py-3">
+      <div className="d-flex align-items-center gap-4 flex-wrap">
+        <Link to="/" className="text-decoration-none fw-semibold text-dark">Home</Link>
+        <Link to="/about" className="text-decoration-none fw-semibold text-dark">About Us</Link>
+        <Link to={eventsPath} className="text-decoration-none fw-semibold text-dark">Events</Link>
         {loggedIn && (
-          <Link to={dashboardPath} style={linkStyle}>Dashboard</Link>
+          <Link to={dashboardPath} className="text-decoration-none fw-semibold text-dark">Dashboard</Link>
         )}
       </div>
 
-      {loggedIn ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <span style={{ color: "var(--color-muted)", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
-            {greeting()}{userName ? `, ${userName.split(" ")[0]}` : ""} 👋
-          </span>
-          <div
-            title={userName || "Your account"}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              background: "var(--color-primary)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: "0.9rem",
-              flexShrink: 0,
-            }}
-          >
-            {initial}
-          </div>
-          <button onClick={handleLogout} className="btn btn--secondary btn--sm">
-            Log out
-          </button>
-        </div>
-      ) : (
-        <Link to="/login" className="btn btn--primary btn--sm">
-          Log in / Sign up
-        </Link>
-      )}
+      <div className="ms-auto d-flex align-items-center gap-3">
+        {loggedIn ? (
+          <>
+            <ThemeToggle />
+            <span className="text-secondary small text-nowrap d-none d-sm-inline">
+              {greeting()}{userName ? `, ${userName.split(" ")[0]}` : ""}
+            </span>
+            <div
+              title={userName || "Your account"}
+              className="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+              style={{ width: 34, height: 34, fontSize: "0.9rem" }}
+            >
+              {initial}
+            </div>
+            <button onClick={handleLogout} className="btn btn-outline-secondary btn-sm">
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <ThemeToggle />
+            <Link to="/login" className="btn btn-dark btn-sm">
+              Log in / Sign up
+            </Link>
+          </>
+        )}
+      </div>
     </nav>
   );
 }

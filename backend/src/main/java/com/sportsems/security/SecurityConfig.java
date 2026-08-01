@@ -58,8 +58,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,   "/api/events/**").authenticated()
                 .requestMatchers(HttpMethod.PUT,    "/api/events/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/events/**").authenticated()
+                // Event categories (menu-driven types) — GET is public for
+                // everyone (guests included) to browse/filter by type;
+                // POST (adding a new category) requires login, and the
+                // controller further restricts it to organizers/admins.
+                .requestMatchers(HttpMethod.GET,  "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/categories/**").authenticated()
                 // Bookings — must be logged in
                 .requestMatchers("/api/bookings/**").authenticated()
+                // Complaints — must be logged in; admin-only sub-actions are
+                // further restricted inside ComplaintController.
+                .requestMatchers("/api/complaints/**").authenticated()
                 // Admin — ADMIN role only
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().permitAll()

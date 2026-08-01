@@ -56,7 +56,7 @@ function GoogleLoginButton({ onCredential, onError }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptReady]);
 
-  return <div ref={buttonDivRef} className="flex justify-center" />;
+  return <div ref={buttonDivRef} className="d-flex justify-content-center" />;
 }
 
 export default GoogleLoginButton;

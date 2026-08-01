@@ -35,6 +35,32 @@ function Register() {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Feature 6: organizer/admin must attach a PDF verification document.
+  const [documentFile, setDocumentFile] = useState(null);
+  const [documentError, setDocumentError] = useState("");
+  const requiresDocument = form.role === "ORGANIZER" || form.role === "ADMIN";
+
+  const handleDocumentChange = (file) => {
+    if (!file) {
+      setDocumentFile(null);
+      setDocumentError(requiresDocument ? "Please upload your verification document (PDF)" : "");
+      return;
+    }
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      setDocumentFile(null);
+      setDocumentError("Only PDF files are allowed");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setDocumentFile(null);
+      setDocumentError("File must be smaller than 5MB");
+      return;
+    }
+    setDocumentFile(file);
+    setDocumentError("");
+  };
+
   const handleChange = (field, value) => {
     const updated = { ...form, [field]: value };
     setForm(updated);
@@ -64,13 +90,26 @@ function Register() {
     setFieldErrors(nextErrors);
     setTouched({ name: true, email: true, password: true, mobile: true });
 
-    if (Object.values(nextErrors).some(Boolean)) return;
+    // Feature 6: organizer/admin registrations require a PDF document.
+    let docError = "";
+    if (requiresDocument && !documentFile) docError = "Please upload your verification document (PDF)";
+    setDocumentError(docError);
+
+    if (Object.values(nextErrors).some(Boolean) || docError) return;
 
     try {
       setLoading(true); setServerError("");
-      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, {
-        name: form.name, email: form.email,
-        password: form.password, phone: form.mobile, role: form.role,
+
+      const data = new FormData();
+      data.append("name", form.name);
+      data.append("email", form.email);
+      data.append("password", form.password);
+      data.append("phone", form.mobile);
+      data.append("role", form.role);
+      if (requiresDocument && documentFile) data.append("document", documentFile);
+
+      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       const status = res.data.status;
@@ -83,7 +122,7 @@ function Register() {
           }
         });
       } else {
-        // Feature 4: USER registered → redirect to login
+        // Feature 4: USER registered redirect to login
         navigate("/login", {
           state: { infoMessage: "Registration successful! You can now login." }
         });
@@ -92,7 +131,9 @@ function Register() {
       const data = err.response?.data;
       // Backend tells us which field a conflict/validation error belongs to
       // (e.g. duplicate email/mobile) — show it live under that row too.
-      if (data?.field && Object.prototype.hasOwnProperty.call(form, data.field)) {
+      if (data?.field === "document") {
+        setDocumentError(data.error);
+      } else if (data?.field && Object.prototype.hasOwnProperty.call(form, data.field)) {
         setFieldErrors(prev => ({ ...prev, [data.field]: data.error }));
       } else {
         setServerError(data?.error || "Server Error");
@@ -101,80 +142,107 @@ function Register() {
     }
   };
 
-  const inputClass = (field) =>
-    `border p-2 rounded-lg outline-none focus:ring-2 ${
-      fieldErrors[field] ? "border-red-400 focus:ring-red-300" : "focus:ring-green-400"
-    }`;
+  const inputClass = (field) => `form-control ${fieldErrors[field] ? "is-invalid" : ""}`;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-xl shadow-md w-[420px]">
-        <h2 className="text-2xl font-bold text-center text-green-600">Let's get you set up 👋</h2>
-        <p className="text-center text-sm text-gray-500 mb-6">
+    <div className="min-vh-100 bg-light d-flex align-items-center justify-content-center py-5">
+      <div className="card border shadow-sm rounded-4 p-4 p-md-5 w-100" style={{ maxWidth: 460 }}>
+        <h2 className="fw-bold text-center mb-1">Let's get you set up</h2>
+        <p className="text-center small text-secondary mb-4">
           Just a few details and you're in.
         </p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
-          <div className="flex flex-col gap-1">
+        <form onSubmit={handleSubmit} className="d-flex flex-column gap-3" noValidate>
+          <div>
             <input type="text" placeholder="Full Name"
               className={inputClass("name")}
               value={form.name}
               onChange={e => handleChange("name", e.target.value)}
               onBlur={() => handleBlur("name")} />
-            {fieldErrors.name && <p className="text-red-500 text-xs">{fieldErrors.name}</p>}
+            {fieldErrors.name && <div className="invalid-feedback d-block">{fieldErrors.name}</div>}
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div>
             <input type="email" placeholder="Email Address"
               className={inputClass("email")}
               value={form.email}
               onChange={e => handleChange("email", e.target.value)}
               onBlur={() => handleBlur("email")} />
-            {fieldErrors.email && <p className="text-red-500 text-xs">{fieldErrors.email}</p>}
+            {fieldErrors.email && <div className="invalid-feedback d-block">{fieldErrors.email}</div>}
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div>
             <input type="password" placeholder="Password (8+ chars, 1 uppercase, 1 number)"
               className={inputClass("password")}
               value={form.password}
               onChange={e => handleChange("password", e.target.value)}
               onBlur={() => handleBlur("password")} />
-            {fieldErrors.password && <p className="text-red-500 text-xs">{fieldErrors.password}</p>}
+            {fieldErrors.password && <div className="invalid-feedback d-block">{fieldErrors.password}</div>}
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div>
             <input type="tel" placeholder="Mobile Number (10 digits)"
               className={inputClass("mobile")}
               value={form.mobile}
               onChange={e => handleChange("mobile", e.target.value)}
               onBlur={() => handleBlur("mobile")} />
-            {fieldErrors.mobile && <p className="text-red-500 text-xs">{fieldErrors.mobile}</p>}
+            {fieldErrors.mobile && <div className="invalid-feedback d-block">{fieldErrors.mobile}</div>}
           </div>
 
           <select
-            className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-400 bg-white"
-            value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+            className="form-select"
+            value={form.role}
+            onChange={e => {
+              const role = e.target.value;
+              setForm({ ...form, role });
+              // Reset document state when switching away from organizer/admin
+              if (role !== "ORGANIZER" && role !== "ADMIN") {
+                setDocumentFile(null);
+                setDocumentError("");
+              }
+            }}>
             <option value="USER">User</option>
             <option value="ORGANIZER">Organizer</option>
             <option value="ADMIN">Admin</option>
           </select>
 
           {/* Feature 3: show note for organizer/admin */}
-          {(form.role === "ORGANIZER" || form.role === "ADMIN") && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
-              ⚠️ <strong>{form.role}</strong> accounts require admin approval before you can login.
+          {requiresDocument && (
+            <div className="alert alert-warning mb-0 small">
+              <strong>{form.role}</strong> accounts require admin approval before you can login.
             </div>
           )}
 
-          {serverError && <p className="text-red-500 text-sm">{serverError}</p>}
-          <button disabled={loading}
-            className={`py-2 rounded-lg text-white font-semibold transition ${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}>
+          {/* Feature 6: organizer/admin verification document upload —
+              only shown when that role is selected. */}
+          {requiresDocument && (
+            <div>
+              <label className="form-label small fw-semibold">
+                Verification Document (PDF) <span className="text-danger">*</span>
+              </label>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={e => handleDocumentChange(e.target.files?.[0] || null)}
+                className={`form-control form-control-sm ${documentError ? "is-invalid" : ""}`}
+              />
+              <p className="small text-secondary mt-1 mb-0">
+                Upload an ID/certification document as proof to help admin validate your {form.role.toLowerCase()} account.
+              </p>
+              {documentFile && !documentError && (
+                <p className="small text-success mb-0">{documentFile.name}</p>
+              )}
+              {documentError && <div className="invalid-feedback d-block">{documentError}</div>}
+            </div>
+          )}
+
+          {serverError && <p className="text-danger small mb-0">{serverError}</p>}
+          <button disabled={loading} className="btn btn-dark py-2 fw-semibold">
             {loading ? "Setting up your account..." : "Create my account"}
           </button>
         </form>
-        <p className="text-center text-sm mt-4 text-gray-600">
+        <p className="text-center small mt-3 mb-0 text-secondary">
           Already have an account?{" "}
-          <Link to="/login" className="text-green-600 font-semibold hover:underline">Login here</Link>
+          <Link to="/login" className="fw-semibold text-decoration-none">Login here</Link>
         </p>
       </div>
     </div>

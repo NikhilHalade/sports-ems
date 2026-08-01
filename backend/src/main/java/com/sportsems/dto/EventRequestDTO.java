@@ -20,6 +20,10 @@ public class EventRequestDTO {
     @Size(max = 200)
     private String venue;
 
+    @NotBlank(message = "Event category/type is required")
+    @Size(max = 100)
+    private String category;
+
     @NotNull(message = "Event date is required")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate eventDate;
@@ -44,6 +48,8 @@ public class EventRequestDTO {
     public void setDescription(String description) { this.description = description; }
     public String getVenue() { return venue; }
     public void setVenue(String venue) { this.venue = venue; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     public LocalDate getEventDate() { return eventDate; }
     public void setEventDate(LocalDate eventDate) { this.eventDate = eventDate; }
     public LocalTime getStartTime() { return startTime; }

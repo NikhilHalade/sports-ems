@@ -68,11 +68,19 @@ public class AdminController {
         }
     }
 
-    @DeleteMapping("/users/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+    // Feature 5: user deletion removed. Admins can only deactivate (status
+    // endpoint above) — no endpoint exists to permanently delete a user.
+
+    // Feature 6: admin downloads the verification PDF a organizer/admin
+    // uploaded at registration, to validate it before approving.
+    @GetMapping("/users/{id}/document")
+    public ResponseEntity<?> getUserDocument(@PathVariable Long id) {
         try {
-            adminService.deleteUser(id);
-            return ResponseEntity.noContent().build();
+            AdminService.DocumentFile doc = adminService.getUserDocument(id);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "inline; filename=\"" + doc.filename + "\"")
+                    .body(doc.bytes);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

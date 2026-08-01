@@ -3,229 +3,199 @@ import { isLoggedIn, getRole } from "../utils/auth";
 
 function Home() {
   const loggedIn = isLoggedIn();
-  const role     = getRole();
+  const role = (getRole() || "").trim().toUpperCase();
   let eventsPath = "/events";
   if (loggedIn) {
-    if      (role === "USER")      eventsPath = "/user/events";
-    else if (role === "ORGANIZER") eventsPath = "/events/manage";
+    if (role === "USER" || role === "ORGANIZER") eventsPath = "/user/events";
   }
 
   return (
     <div className="bg-white">
 
       {/* HERO SECTION */}
-      <section className="min-h-screen flex items-center">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-10 items-center">
+      <section className="py-5 border-bottom">
+        <div className="container py-5">
+          <div className="row align-items-center g-5">
 
-          {/* LEFT */}
-          <div>
-            <p className="text-purple-600 font-semibold mb-4">
-              🎉 EventSphere
-            </p>
+            <div className="col-lg-6">
+              <p className="text-uppercase small fw-semibold text-secondary mb-3" style={{ letterSpacing: "0.08em" }}>
+                EventSphere
+              </p>
 
-            <h1 className="text-6xl font-bold leading-tight text-gray-900">
-              Discover
-              <span className="text-purple-600"> Amazing Events</span>
-              <br />
-              Around You
-            </h1>
+              <h1 className="display-4 fw-bold lh-sm mb-4">
+                Discover amazing events around you
+              </h1>
 
-            <p className="mt-6 text-lg text-gray-600">
-              Find concerts, workshops, conferences,
-              hackathons and unforgettable experiences.
-            </p>
+              <p className="fs-5 text-secondary mb-4">
+                Find concerts, workshops, conferences, hackathons and
+                unforgettable experiences.
+              </p>
 
-            <div className="mt-8 flex gap-4">
-              <Link
-                to={eventsPath}
-                className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700"
-              >
-                Explore Events
-              </Link>
-
-              <Link
-                to="/login"
-                className="border px-6 py-3 rounded-xl hover:bg-gray-100"
-              >
-                Login
-              </Link>
+              <div className="d-flex flex-wrap gap-3">
+                <Link to={eventsPath} className="btn btn-dark btn-lg px-4">
+                  Explore Events
+                </Link>
+                <Link to="/login" className="btn btn-outline-secondary btn-lg px-4">
+                  Login
+                </Link>
+              </div>
             </div>
-          </div>
 
-          {/* RIGHT IMAGE */}
-          <div>
-            <img
-              src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200"
-              alt="event"
-              className="rounded-3xl shadow-2xl"
-            />
-          </div>
+            <div className="col-lg-6">
+              <img
+                src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200"
+                alt="event"
+                className="img-fluid rounded-4 shadow-sm w-100"
+                style={{ objectFit: "cover", maxHeight: "480px" }}
+              />
+            </div>
 
+          </div>
         </div>
       </section>
 
       {/* UPCOMING EVENTS */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
+      <section className="py-5">
+        <div className="container py-4">
 
-        <h2 className="text-4xl font-bold text-center mb-12">
-          Upcoming Events
-        </h2>
+          <h2 className="fw-bold text-center mb-5">Upcoming Events</h2>
 
-        <div className="grid md:grid-cols-3 gap-8">
+          <div className="row g-4">
 
-  <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:scale-105 transition">
-    <img
-      src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200"
-      alt="Tech Summit"
-      className="h-52 w-full object-cover"
-    />
-    <div className="p-6">
-      <h3 className="text-xl font-bold">Tech Summit 2026</h3>
-      <p className="text-gray-500 mt-2">📍 Bangalore • Aug 25</p>
-    </div>
-  </div>
+            <div className="col-md-4">
+              <div className="card border shadow-sm h-100">
+                <img
+                  src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200"
+                  alt="Tech Summit"
+                  className="card-img-top"
+                  style={{ height: "13rem", objectFit: "cover" }}
+                />
+                <div className="card-body p-4">
+                  <h5 className="card-title fw-bold mb-1">Tech Summit 2026</h5>
+                  <p className="card-text text-secondary small mb-0">Bangalore • Aug 25</p>
+                </div>
+              </div>
+            </div>
 
-  <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:scale-105 transition">
-    <img
-      src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200"
-      alt="Music Festival"
-      className="h-52 w-full object-cover"
-    />
-    <div className="p-6">
-      <h3 className="text-xl font-bold">Music Festival</h3>
-      <p className="text-gray-500 mt-2">📍 Mumbai • Sept 10</p>
-    </div>
-  </div>
+            <div className="col-md-4">
+              <div className="card border shadow-sm h-100">
+                <img
+                  src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200"
+                  alt="Music Festival"
+                  className="card-img-top"
+                  style={{ height: "13rem", objectFit: "cover" }}
+                />
+                <div className="card-body p-4">
+                  <h5 className="card-title fw-bold mb-1">Music Festival</h5>
+                  <p className="card-text text-secondary small mb-0">Mumbai • Sept 10</p>
+                </div>
+              </div>
+            </div>
 
-  <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:scale-105 transition">
-    <img
-      src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200"
-      alt="Startup Meetup"
-      className="h-52 w-full object-cover"
-    />
-    <div className="p-6">
-      <h3 className="text-xl font-bold">Startup Meetup</h3>
-      <p className="text-gray-500 mt-2">📍 Delhi • Sept 15</p>
-    </div>
-  </div>
+            <div className="col-md-4">
+              <div className="card border shadow-sm h-100">
+                <img
+                  src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200"
+                  alt="Startup Meetup"
+                  className="card-img-top"
+                  style={{ height: "13rem", objectFit: "cover" }}
+                />
+                <div className="card-body p-4">
+                  <h5 className="card-title fw-bold mb-1">Startup Meetup</h5>
+                  <p className="card-text text-secondary small mb-0">Delhi • Sept 15</p>
+                </div>
+              </div>
+            </div>
 
-</div>
-
+          </div>
+        </div>
       </section>
 
       {/* EVENT MOMENTS */}
-      <section className="bg-gray-50 py-20">
+      <section className="py-5 bg-light border-top border-bottom">
+        <div className="container py-4">
 
-        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="fw-bold text-center mb-5">Event Moments</h2>
 
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Event Moments
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
-
-            <img
-              src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200"
-              className="rounded-3xl h-80 w-full object-cover"
-              alt=""
-            />
-
-            <img
-              src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200"
-              className="rounded-3xl h-80 w-full object-cover"
-              alt=""
-            />
-
+          <div className="row g-4">
+            <div className="col-md-6">
+              <img
+                src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200"
+                className="img-fluid rounded-4 shadow-sm w-100"
+                style={{ height: "20rem", objectFit: "cover" }}
+                alt=""
+              />
+            </div>
+            <div className="col-md-6">
+              <img
+                src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200"
+                className="img-fluid rounded-4 shadow-sm w-100"
+                style={{ height: "20rem", objectFit: "cover" }}
+                alt=""
+              />
+            </div>
           </div>
 
         </div>
-
       </section>
 
       {/* ABOUT */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
+      <section className="py-5">
+        <div className="container py-4">
+          <div className="row align-items-center g-5">
 
-        <div className="grid md:grid-cols-2 gap-10 items-center">
+            <div className="col-lg-6">
+              <h2 className="fw-bold mb-4">About EventSphere</h2>
+              <p className="fs-5 text-secondary mb-4">
+                We help people discover and experience extraordinary events.
+                From concerts and workshops to conferences and festivals,
+                everything is available in one place.
+              </p>
+              <Link to="/about" className="btn btn-dark px-4">
+                Learn More
+              </Link>
+            </div>
 
-          <div>
-            <h2 className="text-5xl font-bold mb-6">
-              About EventSphere
-            </h2>
+            <div className="col-lg-6">
+              <img
+                src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200"
+                className="img-fluid rounded-4 shadow-sm w-100"
+                alt=""
+              />
+            </div>
 
-            <p className="text-lg text-gray-600">
-              We help people discover and experience
-              extraordinary events. From concerts and
-              workshops to conferences and festivals,
-              everything is available in one place.
-            </p>
-
-            <Link
-              to="/about"
-              className="inline-block mt-6 bg-purple-600 text-white px-5 py-3 rounded-xl"
-            >
-              Learn More
-            </Link>
           </div>
-
-          <img
-            src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200"
-            className="rounded-3xl shadow-xl"
-            alt=""
-          />
-
         </div>
-
       </section>
 
       {/* STATS */}
-      <section className="bg-purple-600 text-white py-16">
+      <section className="py-5 border-top bg-light">
+        <div className="container">
+          <div className="row text-center g-4">
 
-        <div className="max-w-6xl mx-auto grid md:grid-cols-4 text-center gap-8">
+            <div className="col-6 col-md-3">
+              <h2 className="fw-bold mb-1">5000+</h2>
+              <p className="text-secondary small mb-0">Users</p>
+            </div>
 
-          <div>
-            <h2 className="text-4xl font-bold">5000+</h2>
-            <p>Users</p>
+            <div className="col-6 col-md-3">
+              <h2 className="fw-bold mb-1">1200+</h2>
+              <p className="text-secondary small mb-0">Events</p>
+            </div>
+
+            <div className="col-6 col-md-3">
+              <h2 className="fw-bold mb-1">300+</h2>
+              <p className="text-secondary small mb-0">Organizers</p>
+            </div>
+
+            <div className="col-6 col-md-3">
+              <h2 className="fw-bold mb-1">4.9</h2>
+              <p className="text-secondary small mb-0">Rating</p>
+            </div>
+
           </div>
-
-          <div>
-            <h2 className="text-4xl font-bold">1200+</h2>
-            <p>Events</p>
-          </div>
-
-          <div>
-            <h2 className="text-4xl font-bold">300+</h2>
-            <p>Organizers</p>
-          </div>
-
-          <div>
-            <h2 className="text-4xl font-bold">4.9★</h2>
-            <p>Rating</p>
-          </div>
-
         </div>
-
       </section>
-
-      {/* FOOTER */}
-      <footer className="bg-black text-white py-10">
-
-        <div className="max-w-6xl mx-auto text-center">
-
-          <h2 className="text-2xl font-bold">
-            EventSphere
-          </h2>
-
-          <p className="text-gray-400 mt-2">
-            Discover • Connect • Celebrate
-          </p>
-
-          <p className="text-gray-500 mt-4">
-            © 2026 EventSphere
-          </p>
-
-        </div>
-
-      </footer>
 
     </div>
   );

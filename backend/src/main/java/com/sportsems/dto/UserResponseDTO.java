@@ -14,6 +14,11 @@ public class UserResponseDTO {
     private int failedAttempts;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") private LocalDateTime lastLogin;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") private LocalDateTime createdAt;
+    // Feature 6: whether this user uploaded a verification document (ORGANIZER/ADMIN)
+    private boolean hasDocument;
+    private String documentOriginalName;
+    // Feature: whether an admin has already opened that document (required before approval)
+    private boolean documentViewed;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -33,4 +38,10 @@ public class UserResponseDTO {
     public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public boolean isHasDocument() { return hasDocument; }
+    public void setHasDocument(boolean hasDocument) { this.hasDocument = hasDocument; }
+    public String getDocumentOriginalName() { return documentOriginalName; }
+    public void setDocumentOriginalName(String documentOriginalName) { this.documentOriginalName = documentOriginalName; }
+    public boolean isDocumentViewed() { return documentViewed; }
+    public void setDocumentViewed(boolean documentViewed) { this.documentViewed = documentViewed; }
 }

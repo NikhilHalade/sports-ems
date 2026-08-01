@@ -5,18 +5,18 @@
 function Alert({ type = 'success', message, onClose }) {
   if (!message) return null
 
+  const variant = type === 'error' ? 'danger' : 'success'
+
   return (
-    <div className={`alert alert--${type}`} role="alert">
+    <div className={`alert alert-${variant} d-flex align-items-start justify-content-between gap-3 border shadow-sm`} role="alert">
       <span>{message}</span>
       {onClose && (
         <button
           type="button"
-          className="alert__close"
+          className="btn-close"
           onClick={onClose}
           aria-label="Dismiss message"
-        >
-          ✕
-        </button>
+        />
       )}
     </div>
   )
